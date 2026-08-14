@@ -1,0 +1,24 @@
+@extends('layouts.reserva')
+<!--ponerle titulo a la paginga-->
+@section('title', 'GESTIONAR RESERVA DE SALA')
+@section('cabecera', 'GESTIONAR RESERVA DE SALA')
+
+@section('content') 
+
+@include('../alerts.request')
+@include('../alerts.errors')
+    <form action="{{ route('reservas-store') }}" method="POST" enctype="multipart/form-data">
+    @csrf
+    @include('reservas.modals.form')
+
+    <div class="row">
+      <div class="col-xs-6">
+        <button class="btn btn-primary btn-block" type="submit">Registrar Reserva</button>
+        </form>
+      </div>
+      <div class="col-xs-6">
+        <a href="{{ url()->previous() }}" class="btn btn-danger  btn-block">Cancelar</a>
+        </form>
+      </div>
+    </div>
+@endsection

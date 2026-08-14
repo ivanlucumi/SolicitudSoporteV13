@@ -1,0 +1,266 @@
+@extends('layouts.usuarios')
+<!--ponerle titulo a la paginga-->
+@section('title', 'Clasificados')
+@section('cabecera', 'Registro de Clasificados')
+@section('content') 
+
+<style>
+        .card {
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .banner-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .banner-img {
+            width: 100%;
+            display: none;
+            height:300px;
+        }
+
+        .banner-img.active {
+            display: block;
+        }
+
+        .banner-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #B62516;
+            color: #fff;
+            padding: 8px;
+            font-weight: bold;
+        }
+
+        .content {
+            padding: 16px;
+        }
+    </style>
+    
+
+<center><h1><strong> CLASIFICADOS.<br> SOLO ESTAR&Aacute; DISPONIBLE POR 8 DIAS LA PUBLICACI&Oacute;N </strong></h1></center>
+<hr>
+ <div class="box-body">
+	            	<div class="container-fluid"> 
+						{!!Form::open(['route'=>'usuario.clasificados.save', 'method'=>'POST','id'=>'form-clasificados', 'files'=>true])!!}
+					            	      		
+					            	
+    						              <div class="row">
+    						                <div class="col-xs-12 col-sm-12 col-md-3 form-group">
+    						                  	
+    						                         {!!Form::label('categoria','Categoria del Producto:')!!}<br>
+    						                         {!!Form::select('categoria',$categorias,null,['placeholder'=>'Seleccione La Categoria','class'=>'form-control ','id'=>'categoria','required'])!!}  
+    						                   
+    						                </div>
+						                <div class="col-xs-12 col-sm-12 col-md-3 form-group">
+						                  	
+						                         {!!Form::label('producto','Nombre Producto:')!!}<br>
+						                         {!!Form::text('producto',null,['placeholder'=>'Registr Nombre Producto','class'=>'form-control ','id'=>'producto','required'])!!}                   
+						                    
+						                </div>
+						                <div class="col-xs-12 col-sm-12 col-md-3 form-group hidden" id="modelo-specs">
+						                  	
+						                         {!!Form::label('producto','Modelo:')!!}<br>
+						                         {!!Form::text('modelo',null,['placeholder'=>'Registre Nombre Producto','class'=>'form-control ','id'=>'modelo'])!!}                   
+						                    
+						                </div>
+						                <div class="col-xs-12 col-sm-12 col-md-3 form-group hidden" id="kilometraje-specs">
+						                  	
+						                         {!!Form::label('producto','Kilometraje:')!!}<br>
+						                         {!!Form::text('kilometraje',null,['placeholder'=>'Registre Nombre Producto','class'=>'form-control ','id'=>'kilometraje'])!!}                   
+						                    
+						                </div>
+						                </div>
+						                <div class="row">
+						                
+						                <div class="col-xs-12 col-sm-12 col-md-6 form-group">
+						                  	
+						                         {!!Form::label('especificaciones','Especificaciones:')!!}<br>
+						                         {!!Form::textarea('especificaciones',null,['placeholder'=>'Registr Nombre Producto','class'=>'form-control ','id'=>'producto','required'])!!}                   
+						                    
+						                </div>
+						                <div class="col-xs-12 col-sm-12 col-md-6 form-group">
+						                  	
+						                         {!!Form::label('caracteristicas','Caracteristicas:')!!}<br>
+						                         {!!Form::textarea('caracteristicas',null,['placeholder'=>'Registr Nombre Producto','class'=>'form-control ','id'=>'producto','required'])!!}                   
+						                    
+						                </div>
+						                <div class="col-xs-12 col-sm-12 col-md-3 form-group " >
+						                  	
+						                         {!!Form::label('contacto_telefono','Tel&eacute;fono:')!!}<br>
+						                         {!!Form::text('contacto_telefono',null,['placeholder'=>'Telefono Contacto','class'=>'form-control ','id'=>'contacto_telefono'])!!}                   
+						                    
+						                </div>
+						                <div class="col-xs-12 col-sm-12 col-md-3 form-group ">
+						                  	
+						                         {!!Form::label('contacto_correo','Correo:')!!}<br>
+						                         {!!Form::email('contacto_correo',null,['placeholder'=>'Correo Contacto','class'=>'form-control ','id'=>'contacto_correo'])!!}                   
+						                    
+						                </div>
+						                
+						              </div>
+						              <div class="row">
+						                <div class="col-xs-12 col-md-6 form-group" id="categ" style="">
+    						                 <label for="photo-upload">Seleccionar Fotos (máximo 3, solo imágenes):</label>
+                                            <input type="file" id="photo-upload" name="photos[]" accept="image/*" multiple>
+                                            <small>Seleccione un máximo de 5 fotos.</small>
+						                </div>
+						              </div>
+						              <hr>
+						              <div class="row">
+                        						<div class="col-xs-6 form-group">
+                        							{!!Form::submit('GUARDAR CLASIFICADO',['class'=>'btn btn-secundary btn-block'])!!}
+                        						</div>
+                        						<div class="col-xs-6 form-group">
+                        							<a href="{{ url()->previous() }}" class="btn btn-primary btn-block">CANCELAR</a>
+                        							{!!Form::close()!!}
+                        						</div>
+                        						
+                        			 </div>
+						              
+									<hr>
+									<center> <h1> <strong>MIS PUBLICACIONES</strong></h1></center>
+									<hr>
+									<div class="row">
+                            		    @foreach($clasificados as $key => $clasificado)
+                            			<div class="col-xs-12 col-sm-3">
+                            			     
+                            									 <div class="card" style="width:95%;height:900px">
+                                                                    <div class="banner-container" >
+                                                                        <img class="banner-img active" src="/Clasificados/{{$clasificado->foto_1}}" alt=""  >
+                                                                        <img class="banner-img " src="/Clasificados/{{$clasificado->foto_2}}" alt=""  >
+                                                                        <img class="banner-img " src="/Clasificados/{{$clasificado->foto_3}}" alt=""  >
+                                                                        
+                                                                        <!-- Agrega más imágenes según sea necesario -->
+                                                            
+                                                                        <div class="banner-text">¡{{$clasificado->categoria}}!</div>
+                                                                        {!!Form::open(['route'=>['usuario.clasificados.delete', $clasificado->id], 'method' => 'DELETE'])!!}
+                                                    					{!!Form::submit('ELIMINAR',['class'=>'btn btn-danger btn-xs fa fa-remove','title'=>'eliminar usuario','style'=>'background-color: #B62516;color: #fff;'])!!}
+                                                    					{!!Form::close()!!}
+                                                            
+                                                                       
+                                                                    </div>
+                            
+                                                                <div class="content">
+                                                                    <h3>{{$clasificado->producto}}</h3>
+                                                                    @if($clasificado->modelo)
+                                                                    <p><strong>Modelo:</strong> {{$clasificado->modelo}}</p>
+                                                                    @endif
+                                                                    @if($clasificado->kilometraje)
+                                                                    <p><strong>Kilometraje:</strong> {{$clasificado->kilometraje}}</p>
+                                                                    @endif
+                                                                    <p><strong>Especificaciones:</strong> {{$clasificado->especificaciones}}</p>
+                                                                    <p><strong>Caracteristicas:</strong> {{$clasificado->caracteristicas}}</p>
+                                                                     @if($clasificado->contacto_telefono)
+                                                                    <p><strong>Telefono:</strong> {{$clasificado->contacto_telefono}}</p>
+                                                                    @endif
+                                                                     @if($clasificado->contacto_correo)
+                                                                    <p><strong>Correo:</strong> {{$clasificado->contacto_correo}}</p>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                            			    </div>
+                                         @endforeach
+                            		</div>
+									
+								</div>
+	            </div>
+
+ 
+
+    <script>
+        const productCategory = document.getElementById("categoria");
+        //const anhosSpecs = document.getElementById("anho-specs");
+        const modeloSpecs = document.getElementById("modelo-specs");
+        const kilometrajeSpecs = document.getElementById("kilometraje-specs");
+
+        productCategory.addEventListener("change", (event) => {
+            //anhosSpecs.classList.add("hidden");
+            modeloSpecs.classList.add("hidden");
+            kilometrajeSpecs.classList.add("hidden");
+            
+            //document.getElementById("anho").removeAttribute("required");
+            document.getElementById("modelo").removeAttribute("required");
+            document.getElementById("kilometraje").removeAttribute("required");
+    
+        //alert(event.target.value)
+
+            const selectedCategory = event.target.value;
+
+            if (selectedCategory === "VEHICULO") {
+                //anhosSpecs.classList.remove("hidden");
+                modeloSpecs.classList.remove("hidden");
+                kilometrajeSpecs.classList.remove("hidden");
+                
+                //document.getElementById("anho").setAttribute("required",'True');
+                document.getElementById("modelo").setAttribute("required",'True');
+                document.getElementById("kilometraje").setAttribute("required",'True');
+                
+                
+            } else if (selectedCategory != "VEHICULO") {
+                //anhosSpecs.classList.add("hidden");
+                modeloSpecs.classList.add("hidden");
+                kilometrajeSpecs.classList.add("hidden");
+            } 
+        });
+    </script>
+    <script>
+        document.getElementById('form-clasificados').addEventListener('submit', function(event) {
+            var input = document.getElementById('photo-upload');
+            var files = input.files;
+
+            // Verificar la cantidad máxima de archivos
+            if (files.length > 3) {
+                alert('Por favor, seleccione un máximo de 5 fotos.');
+                event.preventDefault();
+            }
+
+            // Verificar que todos los archivos sean imágenes
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                var fileType = file.type.split('/')[0]; // Obtener el tipo de archivo (por ejemplo, 'image')
+
+                if (fileType !== 'image') {
+                    alert('Por favor, seleccione solo imágenes.');
+                    event.preventDefault();
+                    break;
+                }
+            }
+        });
+    </script>
+    
+     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            function initializeBanner(bannerContainer) {
+                let currentIndex = 0;
+                const images = bannerContainer.querySelectorAll('.banner-img');
+
+                function showImage(index) {
+                    images.forEach(img => img.classList.remove('active'));
+                    images[index].classList.add('active');
+                }
+
+                function nextImage() {
+                    currentIndex = (currentIndex + 1) % images.length;
+                    showImage(currentIndex);
+                }
+
+                // Cambia de imagen cada 3 segundos (ajustable según tus preferencias)
+                setInterval(nextImage, 3000);
+            }
+
+            // Inicializar cada banner
+            const banners = document.querySelectorAll('.banner-container');
+            banners.forEach(banner => initializeBanner(banner));
+        });
+    </script>
+
+@endsection
