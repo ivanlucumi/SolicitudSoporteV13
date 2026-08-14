@@ -1,0 +1,39 @@
+ var filtersConfig2 = {
+        base_path: '/tablefilter/',
+        col_number_format: [null,null,'US','US','US'],  
+        col_0: '',        
+        col_1: 'disabled',        
+        col_2: 'disabled',
+        col_3: 'disabled',
+        col_4: 'disabled',
+        col_5: 'disabled',
+        display_all_text: "<SELECCIONAR>", 
+        
+         paging: {
+          results_per_page: ['Records: ', [200,500,1000]]
+        },
+        alternate_rows: true,
+        rows_counter: true,
+        btn_reset: true,
+        loader: true,
+        status_bar: true,
+        mark_active_columns: {
+            highlight_column: true
+        },
+        highlight_keywords: true,
+        no_results_message: true,
+        
+
+        extensions:[{ name: 'sort' }],
+         filters_cell_tag: 'th',
+
+
+
+        // allows Material Design Lite table styling
+        themes: [{
+            name: 'transparent'
+        }]
+    };
+
+    var tft = new TableFilter('table9', filtersConfig2);
+    tft.init();

@@ -1,0 +1,160 @@
+<div>
+
+    {!!Form::hidden('edita',$edita,['class'=>'form-control','shadow', 'autocomplete'=>"off"])!!}
+
+</div>
+
+
+
+<!-- Fin de los inputs ocultos   -->
+
+<div class="row ">
+
+    <div class="col-xs-6 col-sm-4 form-group ">
+
+        {!!Form::label('fechaA','C&eacute;dula Funcionario:')!!}
+
+        {!!Form::number('cedula',$encuesta->cedula,['class'=>'form-control','shadow','required', 'autocomplete'=>"off",'placeholder'=>'Ingrese No C&eacute;dula'])!!}
+
+    </div>
+
+    <div class="col-xs-6 col-sm-4 form-group ">
+
+        {!!Form::label('nombre','Nombre:')!!}
+
+        {!!Form::text('nombre',$encuesta->nombre,['class'=>'form-control','shadow','required', 'autocomplete'=>"off",'placeholder'=>'Ingrese Nombre','required'])!!}
+
+    </div>
+
+    <div class="col-xs-6 col-sm-4  form-group ">
+
+        {!!Form::label('apellido','Apellido:')!!}
+
+        {!!Form::text('apellido',$encuesta->apellido,['class'=>'form-control','shadow','required','placeholder'=>'Ingrese Apellido', 'autocomplete'=>"off", 'required'])!!}
+
+    </div>
+
+    
+
+</div>
+
+
+
+
+<div class="row ">
+
+    
+
+    <div class="col-xs-12 col-sm-6  form-group ">
+
+        {!!Form::label('esquema','Esquema de Vacunacion')!!}
+
+        <div class="row">
+            <div class="col-xs-12 col-lg-3">
+
+                <label><input type="radio" id="cbox2" value="NINGUNA" onClick="oculto()" name="esquema" @if($encuesta->esquema == 'NINGUNA')
+
+                    <?php echo 'checked'; ?>
+
+                @endif > NINGUNA</label>
+
+                </div>
+
+            <div class="col-xs-12 col-lg-3">
+
+                <label><input type="radio" id="cbox2" value="1_DOSIS" onClick="visible()" name="esquema" @if($encuesta->esquema == '1_DOSIS')
+
+                    <?php echo 'checked'; ?>
+
+                @endif > 1 DOSIS</label>
+
+                </div>
+            <div class="col-xs-12 col-lg-3">
+
+                <label><input type="radio" id="cbox2" value="2_DOSIS" onClick="visible()" name="esquema" @if($encuesta->esquema == '2_DOSIS')
+
+                    <?php echo 'checked'; ?>
+
+                @endif > 2 DOSIS</label>
+
+                </div>
+            <div class="col-xs-12 col-lg-3">
+
+                <label><input type="radio" id="cbox2" value="3_DOSIS" onClick="visible()" name="esquema" @if($encuesta->esquema == '3_DOSIS')
+
+                    <?php echo 'checked'; ?>
+
+                @endif > 3 DOSIS</label>
+
+                </div>
+
+        </div>
+
+        
+
+    </div>
+    <div class="col-xs-6" style= "display:none" id="vacuna">
+		{!!Form::label('hora','Seleccione Vacuna Aplicada:')!!}<br>
+		{!!Form::select('vacuna',$VACUNAS,null,['placeholder'=>'Seleccione Vacuna','class'=>'form-control'])!!}<br>	
+	</div>
+
+   <div class="col-xs-12  form-group " id="estado_vac" style= "display:block">
+
+        {!!Form::label('estado','Estado Vacunaci&oacute;n')!!}
+
+        <div class="row">
+
+            <div class="col-xs-12 col-lg-6">
+
+                <label><input type="radio" id="cboxvac"  value="SIN_VACUNA" name="estado" onClick="oculto()" @if($encuesta->estado == 'SIN_VACUNA')
+
+                    <?php echo 'checked'; ?>
+
+                @endif >SIN_VACUNA</label>
+
+                </div>
+            <div class="col-xs-12 col-lg-6">
+
+                <label><input type="radio" id="cboxvac" value="NO_DESEO_SER_VACUNADO" onClick="oculto()" name="estado" @if($encuesta->estado == 'NO_DESEO_SER_VACUNADO')
+
+                    <?php echo 'checked'; ?>
+
+                @endif >NO_DESEO_SER_VACUNADO</label>
+
+                </div>
+            
+
+        </div>
+
+
+</div>
+</div>
+
+
+ <script>
+     
+function oculto(){
+          //console.log(id)
+        //div = document.getElementById(id);
+            
+       var det = document.getElementById('vacuna'); 
+        det.style.display = 'none';
+        
+        var sindet = document.getElementById('estado_vac'); 
+        sindet.style.display = 'block';
+        
+        } 
+function visible(){
+         var det = document.getElementById('vacuna'); 
+        det.style.display = 'block';
+        
+        // Uncheck
+document.getElementById("cboxvac").checked = false;
+        
+        var sindet = document.getElementById('estado_vac'); 
+        sindet.style.display = 'none';
+        } 
+        
+</script>
+
+    

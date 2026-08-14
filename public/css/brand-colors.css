@@ -1,0 +1,117 @@
+:root {
+  --brand-primary: #004182;
+  --brand-primary-dark: #003366;
+  --brand-primary-light: #dce8f5;
+  --bs-green: #004182;
+  --bs-success: #004182;
+  --green: #004182;
+  --success: #004182;
+  --success-color: #004182;
+}
+
+.btn-success,
+.btn-success:focus,
+.label-success,
+.badge-success,
+.bg-success,
+.callout.callout-success,
+.progress-bar-success,
+.panel-success > .panel-heading {
+  background-color: #004182 !important;
+  border-color: #003366 !important;
+  color: #fff !important;
+}
+
+.btn-success:hover,
+.btn-success:active,
+.btn-success.active,
+.btn-success:active:focus,
+.btn-success:active:hover,
+.open > .dropdown-toggle.btn-success {
+  background-color: #003366 !important;
+  border-color: #002d5c !important;
+  color: #fff !important;
+}
+
+.btn-outline-success {
+  color: #004182 !important;
+  border-color: #004182 !important;
+}
+
+.btn-outline-success:hover,
+.btn-outline-success:focus,
+.btn-outline-success:active {
+  background-color: #004182 !important;
+  border-color: #003366 !important;
+  color: #fff !important;
+}
+
+.text-success,
+a.text-success,
+a.text-success:hover,
+a.text-success:focus {
+  color: #004182 !important;
+}
+
+.alert-success {
+  background-color: #dce8f5 !important;
+  border-color: #004182 !important;
+  color: #003366 !important;
+}
+
+.alert-success hr {
+  border-top-color: #b8cfe6 !important;
+}
+
+.table-success,
+.table-success > th,
+.table-success > td {
+  background-color: #dce8f5 !important;
+}
+
+.border-success {
+  border-color: #004182 !important;
+}
+
+.list-group-item-success {
+  background-color: #dce8f5 !important;
+  color: #003366 !important;
+}
+
+.skin-green .main-header .navbar,
+.skin-green-light .main-header .navbar,
+.skin-green .main-header li.user-header,
+.skin-green-light .main-header li.user-header {
+  background-color: #004182 !important;
+}
+
+.skin-green .main-header .logo,
+.skin-green-light .main-header .logo {
+  background-color: #003366 !important;
+}
+
+.skin-green .main-header .navbar .sidebar-toggle:hover,
+.skin-green-light .main-header .navbar .sidebar-toggle:hover,
+.skin-green .main-header .navbar .dropdown-menu li a:hover,
+.skin-green-light .main-header .navbar .dropdown-menu li a:hover {
+  background-color: #003366 !important;
+}
+
+.skin-green .sidebar-menu > li.active > a,
+.skin-green-light .sidebar-menu > li.active {
+  border-left-color: #004182 !important;
+}
+
+.skin-green-light .main-header .logo {
+  background-color: #004182 !important;
+}
+
+.badge-adentro {
+  background: #dce8f5 !important;
+  color: #004182 !important;
+}
+
+.icheckbox_flat-green.checked,
+.iradio_flat-green.checked {
+  background-position: -110px 0 !important;
+}

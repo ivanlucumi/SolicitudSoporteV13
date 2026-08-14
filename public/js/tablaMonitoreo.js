@@ -1,0 +1,45 @@
+ var filtersConfig = {
+        base_path: '/tablefilter/',
+        col_number_format: [null,null,'US','US','US'],  
+        col_0: '',  
+        col_1: '',
+        col_2: '',
+        col_3: 'select',
+        col_4: '',
+        col_5: 'select',
+        col_6:'',
+        col_7:'select',
+        display_all_text: "<SELECCIONAR>", 
+        
+         paging: {
+          results_per_page: ['Records: ', [50,200,500]]
+        },
+        alternate_rows: true,
+        rows_counter: true,
+        btn_reset: true,
+        loader: true,
+        status_bar: true,
+        mark_active_columns: {
+            highlight_column: true
+        },
+        highlight_keywords: true,
+        no_results_message: true,
+        
+
+        extensions:[{ name: 'sort' }],
+         filters_cell_tag: 'th',
+
+
+
+        // allows Material Design Lite table styling
+        themes: [{
+            name: 'transparent'
+        }]
+    };
+
+    var tableElement = document.getElementById('table9') || document.getElementById('tableIngresos');
+    if (tableElement) {
+        var tf = new TableFilter(tableElement.id, filtersConfig);
+        tf.init();
+    }
+

@@ -1,0 +1,22 @@
+{
+  "name": "Mi Carnet",
+  "short_name": "Mi Carnet",
+  "description": "Carnet Digital Institucional de la Rama Judicial",
+  "display": "standalone",
+  "background_color": "#003f74",
+  "theme_color": "#003f74",
+  "icons": [
+    {
+      "src": "/Logo/Siris.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Logo/Siris.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

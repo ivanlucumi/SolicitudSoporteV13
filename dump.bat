@@ -1,0 +1,1 @@
+"C:\laragon\bin\php\php-8.1.10-Win32-vs16-x64\php.exe" artisan tinker --execute="file_put_contents('public/db_dump.json', json_encode(App\Models\EncuestaSiniestro::with('elementos')->orderBy('id', 'desc')->take(3)->get()));"
