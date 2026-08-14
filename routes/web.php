@@ -246,6 +246,11 @@ use App\Http\Controllers\AdminAutorizacionIngresoController;
 // Ruta pública para descargar el PDF de la solicitud de ingreso (Botón en correo y QR)
 Route::get('/solicitud/ingreso/{seguimiento}/pdf', [AutorizacionIngresoController::class, 'descargarPdf'])->name('solicitud_ingreso.pdf');
 
+// Rutas públicas para validar solicitud de ingreso
+Route::get('/solicitud/ingreso/validar', [AutorizacionIngresoController::class, 'mostrarFormularioValidacion'])->name('solicitud_ingreso.validar_form');
+Route::post('/solicitud/ingreso/validar', [AutorizacionIngresoController::class, 'procesarFormularioValidacion'])->name('solicitud_ingreso.validar_post');
+Route::get('/solicitud/ingreso/validar/{seguimiento}', [AutorizacionIngresoController::class, 'validarQr'])->name('solicitud_ingreso.qr');
+
 Route::middleware(['auth', 'usuario'])->group(function() {
     Route::get('/reporte-danos', [ReporteFallasController::class, 'index'])->name('reporte.danos.index');
     Route::post('/guardar-fallas', [ReporteFallasController::class, 'store'])->name('reporte.danos.store');

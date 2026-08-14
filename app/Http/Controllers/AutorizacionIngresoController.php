@@ -142,4 +142,54 @@ class AutorizacionIngresoController extends Controller
         return $pdf->download('Comprobante_Ingreso_' . $solicitud->numero_seguimiento . '.pdf');
     }
 
+    /**
+     * Muestra la página pública de validación al escanear el QR
+     */
+    public function validarQr($seguimiento)
+    {
+        $solicitud = AutorizacionIngreso::where('numero_seguimiento', $seguimiento)->firstOrFail();
+        
+        if ($solicitud->estado === 'Autorizada' && !empty($solicitud->fecha_ingreso)) {
+            if (\Carbon\Carbon::parse($solicitud->fecha_ingreso)->startOfDay()->lt(now()->startOfDay())) {
+                return redirect()->route('solicitud_ingreso.validar_form')
+                    ->with('error', 'La fecha autorizada para este permiso ya pasó (' . \Carbon\Carbon::parse($solicitud->fecha_ingreso)->format('d/m/Y') . '). No está autorizado para ingresar el día de hoy.');
+            }
+        }
+
+        $empleado = Empleado::where('cedulaE', $solicitud->cedula_empleado)->first();
+        return view('externo.SolicitudIngreso.validador', compact('solicitud', 'empleado'));
+    }
+
+    /**
+     * Muestra el formulario para buscar una solicitud de ingreso
+     */
+    public function mostrarFormularioValidacion()
+    {
+        return view('externo.SolicitudIngreso.buscar_validador');
+    }
+
+    /**
+     * Procesa la búsqueda desde el formulario de validación
+     */
+    public function procesarFormularioValidacion(Request $request)
+    {
+        $request->validate([
+            'numero_seguimiento' => 'required|string|max:50'
+        ]);
+
+        $solicitud = AutorizacionIngreso::where('numero_seguimiento', $request->numero_seguimiento)->first();
+
+        if (!$solicitud) {
+            return back()->with('error', 'No se encontró ninguna solicitud de ingreso con el número de seguimiento proporcionado.');
+        }
+
+        if ($solicitud->estado === 'Autorizada' && !empty($solicitud->fecha_ingreso)) {
+            if (\Carbon\Carbon::parse($solicitud->fecha_ingreso)->startOfDay()->lt(now()->startOfDay())) {
+                return back()->with('error', 'La fecha autorizada para este permiso ya pasó (' . \Carbon\Carbon::parse($solicitud->fecha_ingreso)->format('d/m/Y') . '). No está autorizado para ingresar el día de hoy.');
+            }
+        }
+
+        $empleado = Empleado::where('cedulaE', $solicitud->cedula_empleado)->first();
+        return view('externo.SolicitudIngreso.validador', compact('solicitud', 'empleado'));
+    }
 }
