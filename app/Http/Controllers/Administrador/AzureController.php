@@ -51,17 +51,160 @@ class AzureController extends Controller
             $this->uploadToAzure($localFilePath, $blobPath);
             $this->cleanUpLocalFile($localFilePath);
 
-            return $this->successResponse('Backup subido exitosamente', [
-                'path' => $blobPath,
-                'filename' => basename($blobPath),
-                'size' => filesize($localFilePath),
-                'deleted_local' => !file_exists($localFilePath)
-            ]);
+            return response()->json([
+                'ok' => true,
+                'mensaje' => 'Backup subido exitosamente',
+                'data' => [
+                    'path' => $blobPath,
+                    'filename' => basename($blobPath),
+                    'size' => filesize($localFilePath),
+                    'deleted_local' => !file_exists($localFilePath)
+                ]
+            ], 200);
 
         } catch (\Exception $e) {
             Log::error("Error en subirBackup: " . $e->getMessage());
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            return response()->json([
+                'ok' => false,
+                'mensaje' => $e->getMessage()
+            ], $e->getCode() > 0 ? $e->getCode() : 500);
         }
+    }
+
+    /**
+     * Genera un backup completo de la base de datos usando mysqldump y lo sube a Azure.
+     * 
+     * @return JsonResponse
+     */
+    public function generarYSubirBackup(): JsonResponse
+    {
+        // Evitar que el servidor corte el proceso por timeout o falta de memoria
+        set_time_limit(0);
+        ini_set('memory_limit', '1024M');
+
+        try {
+            // Asegurar que el directorio de backups existe
+            if (!file_exists($this->backupPath)) {
+                mkdir($this->backupPath, 0755, true);
+            }
+
+            $dbHost = env('DB_HOST', '127.0.0.1');
+            $dbPort = env('DB_PORT', '3306');
+            $dbUser = env('DB_USERNAME', 'root');
+            $dbPass = env('DB_PASSWORD', '');
+            $dbName = env('DB_DATABASE', 'siris');
+
+            $dateString = Carbon::now()->format('Y-m-d_H-i-s');
+            $filename = "backup_completo_{$dbName}_{$dateString}.sql";
+            $localFilePath = $this->backupPath . '/' . $filename;
+
+            // En lugar de usar exec() con mysqldump (que está deshabilitado por seguridad en producción),
+            // usamos un método nativo de PHP para generar el SQL
+            $this->dumpDatabasePhp($localFilePath);
+
+            if (!file_exists($localFilePath) || filesize($localFilePath) === 0) {
+                @unlink($localFilePath);
+                throw new \Exception("El archivo de backup generado está vacío o falló la creación.");
+            }
+
+            // Forzar que el backup se almacene en el contenedor 'siriscali'
+            $this->containerName = 'siriscali';
+
+            // Una vez generado exitosamente, usamos el método existente para subirlo a Azure y limpiar
+            $response = $this->subirBackup($filename);
+
+            // Si la subida fue exitosa, enviamos el correo
+            if ($response->getStatusCode() === 200) {
+                try {
+                    \Illuminate\Support\Facades\Mail::raw(
+                        "El backup automático de la base de datos SIRIS se ha generado y subido a Azure correctamente.\n\n" .
+                        "Archivo: {$filename}\n" .
+                        "Fecha de generación: " . \Carbon\Carbon::now()->format('d/m/Y H:i:s') . "\n\n" .
+                        "Este es un mensaje automático, por favor no responda.",
+                        function ($message) {
+                            $message->to('gmstdesajvalle3@cendoj.ramajudicial.gov.co')
+                                    ->subject('Notificación de Backup Exitoso - SIRIS');
+                        }
+                    );
+                } catch (\Exception $mailEx) {
+                    \Illuminate\Support\Facades\Log::error("Backup subido pero falló el envío de correo: " . $mailEx->getMessage());
+                }
+            }
+
+            return $response;
+
+        } catch (\Exception $e) {
+            Log::error("Error generando backup de BD: " . $e->getMessage());
+            return response()->json([
+                'ok' => false,
+                'mensaje' => "Error al generar el backup: " . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera un archivo SQL de respaldo puro en PHP usando DB::cursor para evitar 
+     * consumo excesivo de memoria, útil en servidores donde exec() está deshabilitado.
+     */
+    protected function dumpDatabasePhp(string $filePath)
+    {
+        $tables = \Illuminate\Support\Facades\DB::select('SHOW TABLES');
+        
+        $handle = fopen($filePath, 'w+');
+        if (!$handle) {
+            throw new \Exception("No se pudo crear el archivo de backup en $filePath");
+        }
+
+        fwrite($handle, "-- Backup generado por SIRIS PHP Dumper\n");
+        fwrite($handle, "-- Fecha: " . \Carbon\Carbon::now()->format('Y-m-d H:i:s') . "\n\n");
+        fwrite($handle, "SET FOREIGN_KEY_CHECKS=0;\n");
+        fwrite($handle, "SET SQL_MODE=\"NO_AUTO_VALUE_ON_ZERO\";\n");
+        fwrite($handle, "SET AUTOCOMMIT=0;\n");
+        fwrite($handle, "START TRANSACTION;\n\n");
+
+        $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+
+        foreach ($tables as $tableRow) {
+            $tableArray = (array)$tableRow;
+            $table = array_values($tableArray)[0];
+            
+            // Estructura
+            $createTable = \Illuminate\Support\Facades\DB::select("SHOW CREATE TABLE `{$table}`");
+            
+            if (isset($createTable[0]->{'Create Table'})) {
+                $createSql = $createTable[0]->{'Create Table'};
+                $isView = false;
+            } elseif (isset($createTable[0]->{'Create View'})) {
+                $createSql = $createTable[0]->{'Create View'};
+                $isView = true;
+            } else {
+                continue;
+            }
+            
+            fwrite($handle, "\n\nDROP " . ($isView ? "VIEW" : "TABLE") . " IF EXISTS `{$table}`;\n");
+            fwrite($handle, $createSql . ";\n\n");
+
+            // Solo insertar datos si es tabla
+            if (!$isView) {
+                foreach (\Illuminate\Support\Facades\DB::table($table)->cursor() as $row) {
+                    $rowArray = (array)$row;
+                    $values = [];
+                    foreach ($rowArray as $value) {
+                        if ($value === null) {
+                            $values[] = 'NULL';
+                        } else {
+                            $values[] = $pdo->quote($value);
+                        }
+                    }
+                    $sql = "INSERT INTO `{$table}` VALUES(" . implode(', ', $values) . ");\n";
+                    fwrite($handle, $sql);
+                }
+            }
+        }
+
+        fwrite($handle, "\nCOMMIT;\n");
+        fwrite($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
+        fclose($handle);
     }
     
     protected function generateUniqueBlobPath(string $filename): string
@@ -326,8 +469,64 @@ class AzureController extends Controller
         return "https://" . env('AZURE_STORAGE_ACCOUNT') . ".blob.core.windows.net/{$this->container}/{$filename}";
     }
     
-    
-    
-    
-    
+    /**
+     * Sube una foto de Siniestro directamente a Azure Blob Storage
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return JsonResponse
+     */
+    public function subirFotoSiniestro(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $request->validate([
+            'foto'        => 'required|file|mimes:jpeg,png,jpg,webp|max:15360',
+            'codigo_juzgado'=> 'required|string',
+            'elemento_id' => 'required|numeric'
+        ]);
+
+        try {
+            $codigo = $request->codigo_juzgado;
+            $file = $request->file('foto');
+            $elementoId = $request->elemento_id;
+            
+            // Buscar la foto recién guardada en la BD para usar el MISMO nombre exacto
+            $fotoDb = \App\Models\EncuestaSiniestroFoto::where('elemento_id', $elementoId)->latest('id')->first();
+            
+            if ($fotoDb && $fotoDb->nombre_archivo) {
+                $filename = $fotoDb->nombre_archivo;
+            } else {
+                // Fallback por si acaso
+                $elemento = \App\Models\EncuestaSiniestroElemento::find($elementoId);
+                $tipoElemento = $elemento ? $elemento->tipo_elemento : 'Elemento';
+                $tipoLimpio = preg_replace('/[^A-Za-z0-9\-]/', '_', $tipoElemento);
+                $extension = $file->getClientOriginalExtension();
+                $filename = "{$codigo}_{$tipoLimpio}_" . time() . ".{$extension}";
+            }
+            
+            // Definir el nombre del contenedor específico para siniestros
+            // (Asegúrate de que este contenedor exista en Azure y tenga permisos de escritura)
+            $containerSiniestros = 'siniestro'; 
+            
+            // La carpeta será directamente el código del juzgado
+            $blobPath = "{$codigo}/{$filename}";
+            
+            // Subir a Azure
+            $stream = fopen($file->getRealPath(), 'r');
+            $this->blobClient->createBlockBlob(
+                $containerSiniestros, 
+                $blobPath, 
+                $stream
+            );
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+
+            return $this->successResponse('Foto subida a Azure correctamente', [
+                'ruta_azure' => $blobPath
+            ]);
+            
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error subiendo foto siniestro a Azure: ' . $e->getMessage());
+            return $this->errorResponse($e->getMessage(), 500);
+        }
+    }
 }

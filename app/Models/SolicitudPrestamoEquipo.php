@@ -27,6 +27,7 @@ class SolicitudPrestamoEquipo extends Model
         'archivo_pdf',
         'estado',
         'observaciones_almacen',
+        'ruta_pdf_firmado',
     ];
 
     protected $casts = [

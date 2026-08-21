@@ -286,7 +286,7 @@ desired effect
         <!--li><a href="{!! url('/UsuariosSolicitud/create')!!}"><i class="fa fa-gavel"></i> <span>Crear Solicitudes</span></a></li-->
         <!--li><a href="{!!route('missolicitudes')!!}"><i class="fa fa-address-book"></i> <span>Revisar mis Solicitudes</span></a></li-->
         
-        <li class="treeview {{ request()->routeIs('prestamo.equipos.index') ? 'active' : '' }} {{ request()->routeIs('solicitud_ingreso.create') ? 'active' : '' }}">
+        <li class="treeview {{ request()->routeIs('encuesta.siniestro.*') || request()->routeIs('prestamo.equipos.index') ? 'active' : '' }} {{ request()->routeIs('solicitud_ingreso.create') ? 'active' : '' }}">
           <a href="#"><i class="fa fa-newspaper-o" aria-hidden="true"></i> <span class="text-danger">Contingencia Terremoto</span>
             <span class="pull-right-container">
               <i class="fa fa-angle-left  pull-right"></i>
@@ -295,6 +295,12 @@ desired effect
           <ul class="treeview-menu">
             <li class="{{ request()->routeIs('prestamo.equipos.index') ? 'active' : '' }}"><a href="{!!route('prestamo.equipos.index')!!}"><i class="fa fa-pencil-square"></i> <span  >Solicitud Pr&eacute;stamo Equipo</span></a></li>
             <li class="{{ request()->routeIs('solicitud_ingreso.index') || request()->routeIs('solicitud_ingreso.create') ? 'active' : '' }}"><a href="{!! route('solicitud_ingreso.index') !!}"><i class="fa fa-sign-in"></i> <span>Solicitud de Ingreso</span></a></li>
+            <li class="{{ request()->routeIs('encuesta.siniestro.*') ? 'active' : '' }}">
+              <a href="{!! route('encuesta.siniestro.index') !!}">
+                <i class="fa fa-exclamation-triangle" style="color:#e74c3c;"></i>
+                <span>Encuesta de Siniestro</span>
+              </a>
+            </li>
           </ul>
         </li>
         <!--li ><a href="{!!route('usuario.digitalizacion.reporte')!!}"><i class="fa fa-pencil-square" readonly="true" disabled="disabled"></i> <span>Inventario Digitalizaci&oacute;n</span></a></li-->

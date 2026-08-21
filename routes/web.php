@@ -243,6 +243,11 @@ use App\Http\Controllers\AdminPrestamoEquiposController;
 use App\Http\Controllers\AutorizacionIngresoController;
 use App\Http\Controllers\AdminAutorizacionIngresoController;
 
+// ==========================================
+// MÓDULO ENCUESTA DE SINIESTROS
+// ==========================================
+use App\Http\Controllers\EncuestaSiniestroController;
+
 // Ruta pública para descargar el PDF de la solicitud de ingreso (Botón en correo y QR)
 Route::get('/solicitud/ingreso/{seguimiento}/pdf', [AutorizacionIngresoController::class, 'descargarPdf'])->name('solicitud_ingreso.pdf');
 
@@ -296,6 +301,43 @@ Route::middleware(['auth', 'almacen'])->group(function() {
 
 
 
+// ==========================================
+// MÓDULO ENCUESTA DE SINIESTROS
+// ==========================================
+Route::middleware(['auth'])->prefix('encuesta/siniestro')->name('encuesta.siniestro.')->group(function () {
+    // Listado
+    Route::get('/', [EncuestaSiniestroController::class, 'index'])->name('index');
+    // Crear
+    Route::get('/crear', [EncuestaSiniestroController::class, 'create'])->name('create');
+    // Guardar cabecera (AJAX)
+    Route::post('/guardar', [EncuestaSiniestroController::class, 'store'])->name('store');
+    // Guardar elemento de forma progresiva (AJAX)
+    Route::post('/elemento/guardar', [EncuestaSiniestroController::class, 'storeElemento'])->name('elemento.store');
+    // Subir foto de un elemento (AJAX)
+    Route::post('/foto/subir', [EncuestaSiniestroController::class, 'storeFoto'])->name('foto.store');
+    // Subir foto a Azure (AJAX)
+    Route::post('/azure/foto/subir', [\App\Http\Controllers\Administrador\AzureController::class, 'subirFotoSiniestro'])->name('azure.foto.store');
+    // Eliminar foto (AJAX)
+    Route::delete('/foto/{id}', [EncuestaSiniestroController::class, 'deleteFoto'])->name('foto.delete');
+
+    // AJAX helpers (deben ir ANTES de /{id} para no causar colisión)
+    Route::get('/ajax/verificar/{codigo}', [EncuestaSiniestroController::class, 'ajaxVerificarDespacho'])->name('ajax.verificar');
+    Route::get('/ajax/despachos/buscar', [EncuestaSiniestroController::class, 'ajaxBuscarDespachos'])->name('ajax.despachos.buscar');
+    Route::get('/ajax/despacho/{codigo}', [EncuestaSiniestroController::class, 'ajaxDespacho'])->name('ajax.despacho');
+    Route::get('/ajax/empleado/cedula/{cedula}', [EncuestaSiniestroController::class, 'ajaxEmpleadoCedula'])->name('ajax.empleado.cedula');
+    Route::get('/ajax/empleados/{codigo}', [EncuestaSiniestroController::class, 'ajaxEmpleados'])->name('ajax.empleados');
+    Route::get('/ajax/inventario/{codigo}', [EncuestaSiniestroController::class, 'ajaxInventario'])->name('ajax.inventario');
+
+    // Finalizar siniestro (genera PDF + envía correo)
+    Route::post('/{id}/finalizar', [EncuestaSiniestroController::class, 'finalizar'])->name('finalizar');
+    // Reenviar correo
+    Route::post('/{id}/reenviar', [EncuestaSiniestroController::class, 'reenviarCorreo'])->name('reenviar');
+    // Descargar PDF
+    Route::get('/{id}/pdf', [EncuestaSiniestroController::class, 'generarPdf'])->name('pdf');
+    // Detalle
+    Route::get('/{id}', [EncuestaSiniestroController::class, 'show'])->name('show');
+});
+
 
 Route::get('/lora/datos/ubicacion/gps', [LoraController::class, 'Index'])->name('ubicacion.lora');
 
@@ -321,6 +363,7 @@ Route::get('/biometria/subir-azure', [AzureBiometriaController::class, 'subirFot
 Route::get('/registro/biometria/save', [BiometriaIngresoController::class,'save'])->name('biometria.registro.save');
 Route::post('/registro/biometria/save/foto', [BiometriaIngresoController::class,'store'])->name('biometria.registro.save.foto');
 Route::post('/registro/biometria/cargar/foto', [BiometriaIngresoController::class,'cargarFoto'])->name('biometria.registro.cargar.foto');*/
+
 
 
 //descargar de docuemntos de certificacion recursos Humanos
@@ -2771,6 +2814,21 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}/responder', [AdminAutorizacionIngresoController::class, 'responder'])->name('admin.solicitud_ingreso.responder');
         Route::get('/{seguimiento}/pdf', [AdminAutorizacionIngresoController::class, 'descargarPdf'])->name('admin.solicitud_ingreso.pdf');
     });
+
+    // ==========================================
+    // MÓDULO ENCUESTAS/LLAMADAS USUARIOS
+    // ==========================================
+    Route::prefix('encuestas-llamadas')->middleware('encuesta')->group(function () {
+        Route::get('/', [\App\Http\Controllers\EncuestaLlamadaController::class, 'index'])->name('encuestas_llamadas.index');
+        Route::get('/exportar', [\App\Http\Controllers\EncuestaLlamadaController::class, 'exportarExcel'])->name('encuestas_llamadas.exportar');
+        Route::get('/historico', [\App\Http\Controllers\EncuestaLlamadaController::class, 'historico'])->name('encuestas_llamadas.historico');
+        Route::get('/{id}/llamar', [\App\Http\Controllers\EncuestaLlamadaController::class, 'llamar'])->name('encuestas_llamadas.llamar');
+        Route::get('/buscar-empleado', [\App\Http\Controllers\EncuestaLlamadaController::class, 'buscarEmpleado'])->name('encuestas_llamadas.buscar');
+        Route::post('/guardar', [\App\Http\Controllers\EncuestaLlamadaController::class, 'guardarEncuesta'])->name('encuestas_llamadas.guardar');
+        Route::post('/importar-csv', [\App\Http\Controllers\EncuestaLlamadaController::class, 'importarCSV'])->name('encuestas_llamadas.importar');
+    });
 });
-
-
+// ==========================================
+// BACKUP DE BASE DE DATOS
+// ==========================================
+Route::get('/backup/generar', [\App\Http\Controllers\Administrador\AzureController::class, 'generarYSubirBackup'])->name('backup.generar');

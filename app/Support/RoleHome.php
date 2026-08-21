@@ -33,6 +33,7 @@ class RoleHome
         '24' => '/vigilancia/judicial/solicitudes',
         '25' => '/almacen',
         '27' => 'conductores',
+        '28' => 'encuestas-llamadas',
     ];
 
     public static function pathFor(mixed $rol): string

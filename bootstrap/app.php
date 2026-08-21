@@ -38,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'vigilancia'   =>  \App\Http\Middleware\VigilanciaJudicialMiddleware::class,
             'almacen'   =>  \App\Http\Middleware\AlmacenMiddleware::class,
             'conductor'   =>  \App\Http\Middleware\ConductorMiddleware::class,
+            'encuesta'    =>  \App\Http\Middleware\EncuestaMiddleware::class,
         ]);
         
         //
