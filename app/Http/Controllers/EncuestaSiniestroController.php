@@ -11,11 +11,14 @@ use App\Models\Inventario;
 use App\Services\CorreoSiniestroService;
 use App\Services\ImagenSiniestroService;
 use App\Services\PdfSiniestroService;
+use App\Exports\SiniestroElementosExport;
+use App\Exports\SiniestroSinDespachoExport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 
 class EncuestaSiniestroController extends Controller
@@ -64,11 +67,27 @@ class EncuestaSiniestroController extends Controller
     // FORMULARIO CREACIÓN
     // ══════════════════════════════════════════════════════════════════════════
 
-    public function create()
+    public function create(Request $request)
     {
+        $siniestro_edit = null;
+
+        if ($request->has('edit_id')) {
+            $siniestro_edit = EncuestaSiniestro::with('elementos.fotos')->findOrFail($request->edit_id);
+
+            if ($siniestro_edit->estado !== 'borrador') {
+                return redirect()->route('encuesta.siniestro.show', $siniestro_edit->id)
+                    ->with('warning', 'Este siniestro ya no está en estado borrador y no puede ser editado.');
+            }
+
+            // Si no es el autor (y no es admin/fichas), bloquear (opcional, pero buena práctica)
+            if (auth()->user()->rol != 1 && auth()->user()->tipo_rol != 'ADMINISTRACION' && $siniestro_edit->user_id !== auth()->id()) {
+                abort(403, 'No tienes permiso para editar este siniestro.');
+            }
+        }
+
         $despachos = DB::table('despachos')
             ->leftJoin('ciudades', 'despachos.codCiudad', '=', 'ciudades.codigoCiudad')
-            ->whereNull('despachos.estado')
+            ->whereRaw("(despachos.estado IS NULL OR LOWER(TRIM(despachos.estado)) != 'Inactivo')")
             ->select(
                 'despachos.codigoDespacho',
                 'despachos.nombreDespacho',
@@ -80,15 +99,17 @@ class EncuestaSiniestroController extends Controller
             ->orderBy('despachos.nombreDespacho')
             ->get();
 
-        // Códigos de despachos que ya tienen un siniestro registrado (no borrador)
-        $despachosRegistrados = EncuestaSiniestro::whereIn('estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
-            ->pluck('despacho_codigo')
-            ->unique()
-            ->values()
-            ->toArray();
+        // Ya no restringimos despachos que tienen siniestros registrados para permitir crear reportes adicionales de faltantes
+        $despachosRegistrados = [];
+
+        if ($siniestro_edit) {
+            return view('encuesta_siniestro.create', compact('despachos', 'despachosRegistrados', 'siniestro_edit'));
+        }
 
         return view('encuesta_siniestro.create', compact('despachos', 'despachosRegistrados'));
     }
+    
+
 
     // ══════════════════════════════════════════════════════════════════════════
     // GUARDAR CABECERA (AJAX – Paso 1)
@@ -103,29 +124,21 @@ class EncuestaSiniestroController extends Controller
         ]);
 
         // ── Verificar unicidad por despacho ───────────────────────────────────
-        // Si viene un siniestro_id existente (actualización de borrador), lo permitimos.
-        // Si no, bloqueamos si ya existe un siniestro activo (no borrador) para ese despacho.
+        // Si no viene un siniestro_id, y ya existe un borrador de hoy para este despacho, lo adoptamos.
         $existente = EncuestaSiniestro::where('despacho_codigo', $request->despacho_codigo)
             ->where('estado', 'borrador')
             ->whereDate('created_at', Carbon::today())
             ->first();
 
-        if ($existente && (!$request->filled('siniestro_id') || $existente->id != $request->siniestro_id)) {
-            return response()->json([
-                'ok'            => false,
-                'duplicado'     => true,
-                'mensaje'       => "El despacho '{$request->despacho_nombre}' ya tiene un siniestro registrado ({$existente->consecutivo}).",
-                'siniestro_url' => route('encuesta.siniestro.show', $existente->id),
-                'consecutivo'   => $existente->consecutivo,
-                'estado'        => $existente->estado_label,
-                'fecha'         => optional($existente->fecha_siniestro)->format('d/m/Y'),
-            ], 409);
+        $siniestro_id = $request->siniestro_id;
+        if ($existente && !$request->filled('siniestro_id')) {
+            $siniestro_id = $existente->id;
         }
 
         DB::beginTransaction();
         try {
-            if ($request->filled('siniestro_id')) {
-                $siniestro = EncuestaSiniestro::findOrFail($request->siniestro_id);
+            if ($siniestro_id) {
+                $siniestro = EncuestaSiniestro::findOrFail($siniestro_id);
                 $siniestro->update([
                     'despacho_codigo'   => $request->despacho_codigo,
                     'despacho_nombre'   => $request->despacho_nombre,
@@ -336,8 +349,13 @@ class EncuestaSiniestroController extends Controller
                 ], 422);
             }
 
-            // Cambiar estado a registrado
-            $siniestro->update(['estado' => 'registrado']);
+            // Cambiar estado a registrado y guardar información final
+            $siniestro->update([
+                'estado' => 'registrado',
+                'observaciones_generales' => $request->observaciones_generales,
+                'url_fotos'               => $request->url_fotos,
+                'firma_empleado'          => $request->firma_empleado,
+            ]);
 
             DB::commit();
 
@@ -347,7 +365,7 @@ class EncuestaSiniestroController extends Controller
                 $rutaPdf = $this->pdfService->generar($siniestro->fresh());
                 $mensajePdf = '✅ PDF generado correctamente.';
             } catch (\Exception $e) {
-                Log::error('Error generando PDF siniestro: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Error generando PDF siniestro: ' . $e->getMessage());
                 $mensajePdf = '⚠️ PDF no pudo generarse: ' . $e->getMessage();
             }
 
@@ -376,9 +394,11 @@ class EncuestaSiniestroController extends Controller
                 'redirect'    => route('encuesta.siniestro.show', $siniestro->id),
             ]);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error al finalizar siniestro: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            \Illuminate\Support\Facades\Log::error('Error al finalizar siniestro: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json(['ok' => false, 'mensaje' => 'Error al finalizar: ' . $e->getMessage()], 500);
         }
     }
@@ -386,6 +406,24 @@ class EncuestaSiniestroController extends Controller
     // ══════════════════════════════════════════════════════════════════════════
     // DETALLE
     // ══════════════════════════════════════════════════════════════════════════
+
+    public function edit(int $id)
+    {
+        $siniestro_edit = EncuestaSiniestro::findOrFail($id);
+        
+        // Si no es borrador, redireccionar al show
+        if ($siniestro_edit->estado !== 'borrador') {
+            return redirect()->route('encuesta.siniestro.show', $id)
+                ->with('warning', 'Este registro ya no se puede editar.');
+        }
+
+        $despachos = \App\Models\Despacho::all();
+        $despachosRegistrados = EncuestaSiniestro::whereIn('estado', ['registrado', 'enviado'])
+            ->pluck('despacho_codigo')
+            ->toArray();
+
+        return view('encuesta_siniestro.create', compact('siniestro_edit', 'despachos', 'despachosRegistrados'));
+    }
 
     public function show(int $id)
     {
@@ -435,7 +473,7 @@ class EncuestaSiniestroController extends Controller
                     : '❌ Error: ' . $resultado['error'],
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'mensaje' => 'Error: ' . $e->getMessage()], 500);
         }
     }
@@ -451,7 +489,7 @@ class EncuestaSiniestroController extends Controller
     public function ajaxVerificarDespacho(string $codigo): JsonResponse
     {
         $siniestro = EncuestaSiniestro::where('despacho_codigo', $codigo)
-            ->whereIn('estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
+            ->where('estado', 'borrador')
             ->orderByDesc('id')
             ->first();
 
@@ -460,12 +498,9 @@ class EncuestaSiniestroController extends Controller
         }
 
         return response()->json([
-            'registrado'    => true,
-            'consecutivo'   => $siniestro->consecutivo,
-            'estado'        => $siniestro->estado_label,
-            'fecha'         => optional($siniestro->fecha_siniestro)->format('d/m/Y'),
-            'elementos'     => $siniestro->elementos()->count(),
-            'siniestro_url' => route('encuesta.siniestro.show', $siniestro->id),
+            'registrado'  => false,
+            'es_borrador' => true,
+            'edit_url'    => route('encuesta.siniestro.create', ['edit_id' => $siniestro->id])
         ]);
     }
 
@@ -538,7 +573,7 @@ class EncuestaSiniestroController extends Controller
     {
         $term = $request->query('q', '');
         
-        $query = Despacho::whereNull('estado')
+        $query = Despacho::whereRaw("(estado IS NULL OR LOWER(TRIM(estado)) != 'inactivo')")
             ->select('codigoDespacho', 'nombreDespacho', 'correoD', 'direccion');
             
         if (!empty($term)) {
@@ -610,4 +645,269 @@ class EncuestaSiniestroController extends Controller
             'observaciones'    => $request->observaciones,
         ];
     }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // DASHBOARD ESTADÍSTICO ADMIN
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * Vista de estadísticas para el rol Administrador:
+     * - KPIs (totales, por estado, por tipo de equipo)
+     * - Tabla de elementos siniestrados (con juzgado, tipo, observaciones)
+     * - Tabla de despachos sin siniestro
+     * - Exportación Excel por cada sección
+     */
+    public function adminDashboard(Request $request)
+    {
+        // Solo admins
+        if (auth()->user()->rol != 1 && auth()->user()->tipo_rol != 'ADMINISTRACION') {
+            abort(403, 'Acceso restringido al administrador.');
+        }
+
+        $filtros = $request->only(['despacho', 'ciudad', 'tipo_elemento', 'estado', 'fecha_inicio', 'fecha_fin']);
+
+        // ── KPIs generales ────────────────────────────────────────────────────
+        $totalSiniestros = EncuestaSiniestro::whereIn('estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])->count();
+
+        $porEstado = EncuestaSiniestro::whereIn('estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
+            ->selectRaw('estado, COUNT(*) as total')
+            ->groupBy('estado')
+            ->pluck('total', 'estado')
+            ->toArray();
+
+        $totalElementos = EncuestaSiniestroElemento::join('encuesta_siniestros', 'encuesta_siniestro_elementos.encuesta_siniestro_id', '=', 'encuesta_siniestros.id')
+            ->whereIn('encuesta_siniestros.estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
+            ->whereRaw("UPPER(TRIM(COALESCE(encuesta_siniestro_elementos.tipo_elemento, ''))) <> 'SIN AFECTACION'")
+            ->count();
+
+        // Tipos de equipo más frecuentes
+        $porTipoElemento = EncuestaSiniestroElemento::join('encuesta_siniestros', 'encuesta_siniestro_elementos.encuesta_siniestro_id', '=', 'encuesta_siniestros.id')
+            ->whereIn('encuesta_siniestros.estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
+            ->whereRaw("UPPER(TRIM(COALESCE(encuesta_siniestro_elementos.tipo_elemento, ''))) <> 'SIN AFECTACION'")
+            ->selectRaw('encuesta_siniestro_elementos.tipo_elemento, COUNT(*) as total')
+            ->groupBy('encuesta_siniestro_elementos.tipo_elemento')
+            ->orderByDesc('total')
+            ->get();
+
+            // =====================================================
+            // TOTAL DE DESPACHOS
+            // =====================================================
+            $totalDespachos = DB::table('despachos')
+                ->whereRaw("(estado IS NULL OR LOWER(TRIM(estado)) != 'inactivo')")
+                ->count();
+
+
+            // =====================================================
+            // DESPACHOS CON SINIESTRO
+            // =====================================================
+            $despachosConSiniestro = DB::table('despachos as d')
+                ->whereRaw("(d.estado IS NULL OR LOWER(TRIM(d.estado)) != 'inactivo')")
+                ->where(function ($q) {
+
+                    // =================================================
+                    // NUEVA ESTRUCTURA
+                    // encuesta_siniestros
+                    // encuesta_siniestro_elementos
+                    // =================================================
+                    $q->whereExists(function ($sub) {
+
+                        $sub->select(DB::raw(1))
+                            ->from('encuesta_siniestros as es')
+                            ->join(
+                                'encuesta_siniestro_elementos as ese',
+                                'es.id',
+                                '=',
+                                'ese.encuesta_siniestro_id'
+                            )
+
+                            // Relacionamos el despacho
+                            ->whereColumn(
+                                'es.despacho_codigo',
+                                'd.codigoDespacho'
+                            )
+
+                            // Estados válidos de la encuesta
+                            ->whereIn('es.estado', [
+                                'registrado',
+                                'enviado',
+                                'en_revision',
+                                'cerrado'
+                            ])
+
+                            // =================================================
+                            // EL TIPO DE ELEMENTO ES EL QUE DEFINE
+                            // SI EXISTE SINIESTRO
+                            // =================================================
+                            ->whereRaw("
+                                UPPER(TRIM(COALESCE(ese.tipo_elemento, '')))
+                                <> 'SIN AFECTACION'
+                            ");
+                    })
+
+
+                    // =================================================
+                    // TABLA ANTIGUA / LEGACY
+                    // =================================================
+                    ->orWhereExists(function ($sub) {
+
+                        $sub->select(DB::raw(1))
+                            ->from('siniestros as s')
+
+                            // Relación con despacho
+                            ->whereColumn(
+                                's.despacho_id',
+                                'd.codigoDespacho'
+                            )
+
+                            // Debe tener estado
+                            ->whereNotNull('s.estado_siniestro')
+                            ->where('s.estado_siniestro', '<>', '')
+
+                            // SIN AFECTACION = no tiene siniestro
+                            ->whereRaw("
+                                UPPER(TRIM(COALESCE(s.estado_siniestro, '')))
+                                <> 'SIN AFECTACION'
+                            ");
+                    });
+                })
+                ->count();
+
+
+            // =====================================================
+            // DESPACHOS SIN SINIESTRO
+            // =====================================================
+            $despachosSinSiniestro = $totalDespachos - $despachosConSiniestro;
+
+        // ── Tabla elementos siniestrados (filtrable) ──────────────────────────
+        $qElementos = EncuestaSiniestroElemento::with('siniestro')
+            ->join('encuesta_siniestros', 'encuesta_siniestro_elementos.encuesta_siniestro_id', '=', 'encuesta_siniestros.id')
+            ->whereIn('encuesta_siniestros.estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
+            ->whereRaw("UPPER(TRIM(COALESCE(encuesta_siniestro_elementos.tipo_elemento, ''))) <> 'SIN AFECTACION'")
+            ->select(
+                'encuesta_siniestro_elementos.*',
+                'encuesta_siniestros.consecutivo',
+                'encuesta_siniestros.despacho_codigo',
+                'encuesta_siniestros.despacho_nombre',
+                'encuesta_siniestros.despacho_ciudad',
+                'encuesta_siniestros.fecha_siniestro',
+                'encuesta_siniestros.estado as estado_siniestro',
+                'encuesta_siniestros.id as siniestro_id'
+            );
+
+        if (!empty($filtros['despacho'])) {
+            $qElementos->where('encuesta_siniestros.despacho_nombre', 'LIKE', '%' . $filtros['despacho'] . '%');
+        }
+        if (!empty($filtros['ciudad'])) {
+            $qElementos->where('encuesta_siniestros.despacho_ciudad', 'LIKE', '%' . $filtros['ciudad'] . '%');
+        }
+        if (!empty($filtros['tipo_elemento'])) {
+            $qElementos->where('encuesta_siniestro_elementos.tipo_elemento', 'LIKE', '%' . $filtros['tipo_elemento'] . '%');
+        }
+        if (!empty($filtros['estado'])) {
+            $qElementos->where('encuesta_siniestros.estado', $filtros['estado']);
+        }
+        if (!empty($filtros['fecha_inicio'])) {
+            $qElementos->whereDate('encuesta_siniestros.fecha_siniestro', '>=', $filtros['fecha_inicio']);
+        }
+        if (!empty($filtros['fecha_fin'])) {
+            $qElementos->whereDate('encuesta_siniestros.fecha_siniestro', '<=', $filtros['fecha_fin']);
+        }
+
+        $elementosSiniestrados = $qElementos->orderBy('encuesta_siniestros.fecha_siniestro', 'desc')->get();
+
+        // Tabla: despachos SIN siniestro en NINGUNA de las dos tablas
+        $qSin = DB::table('despachos')
+            ->leftJoin('ciudades', 'despachos.codCiudad', '=', 'ciudades.codigoCiudad')
+            ->whereRaw("(despachos.estado IS NULL OR LOWER(TRIM(despachos.estado)) != 'Inactivo')")
+            // Excluir despachos que sí tengan un siniestro reportado en tabla NUEVA
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('encuesta_siniestros as es')
+                    ->join('encuesta_siniestro_elementos as ese', 'es.id', '=', 'ese.encuesta_siniestro_id')
+                    ->whereColumn('es.despacho_codigo', 'despachos.codigoDespacho')
+                    ->whereIn('es.estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
+                    ->whereRaw("UPPER(TRIM(COALESCE(ese.tipo_elemento, ''))) <> 'SIN AFECTACION'");
+            })
+            // Excluir despachos con siniestro reportado en tabla ANTIGUA
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('siniestros as s')
+                    ->whereColumn('s.despacho_id', 'despachos.codigoDespacho')
+                    ->whereNotNull('s.estado_siniestro')
+                    ->where('s.estado_siniestro', '!=', '')
+                    ->whereRaw("UPPER(TRIM(COALESCE(s.estado_siniestro, ''))) <> 'SIN AFECTACION'");
+            })
+            ->select(
+                'despachos.codigoDespacho',
+                'despachos.nombreDespacho',
+                'ciudades.nombreCiudad',
+                'despachos.direccion',
+                'despachos.correoD',
+                'despachos.telefono',
+                'despachos.circuito',
+                'despachos.especialidad'
+            );
+
+        if (!empty($filtros['despacho'])) {
+            $qSin->where('despachos.nombreDespacho', 'LIKE', '%' . $filtros['despacho'] . '%');
+        }
+        if (!empty($filtros['ciudad'])) {
+            $qSin->where('ciudades.nombreCiudad', 'LIKE', '%' . $filtros['ciudad'] . '%');
+        }
+
+        $despachosSinRegistro = $qSin->orderBy('despachos.nombreDespacho')->get();
+
+        // Tipos únicos para filtro desplegable
+        $tiposElemento = EncuestaSiniestroElemento::join('encuesta_siniestros', 'encuesta_siniestro_elementos.encuesta_siniestro_id', '=', 'encuesta_siniestros.id')
+            ->whereIn('encuesta_siniestros.estado', ['registrado', 'enviado', 'en_revision', 'cerrado'])
+            ->whereNotNull('encuesta_siniestro_elementos.tipo_elemento')
+            ->distinct()
+            ->pluck('encuesta_siniestro_elementos.tipo_elemento')
+            ->sort()
+            ->values();
+
+        return view('encuesta_siniestro.admin_dashboard', compact(
+            'totalSiniestros',
+            'totalElementos',
+            'despachosConSiniestro',
+            'despachosSinSiniestro',
+            'porEstado',
+            'porTipoElemento',
+            'elementosSiniestrados',
+            'despachosSinRegistro',
+            'tiposElemento',
+            'filtros'
+        ));
+    }
+
+    /**
+     * Exportar Excel de elementos siniestrados (con filtros de la URL)
+     */
+    public function exportarElementos(Request $request)
+    {
+        if (auth()->user()->rol != 1 && auth()->user()->tipo_rol != 'ADMINISTRACION') {
+            abort(403);
+        }
+
+        $filtros = $request->only(['despacho', 'ciudad', 'tipo_elemento', 'estado', 'fecha_inicio', 'fecha_fin']);
+        $filename = 'siniestros_elementos_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new SiniestroElementosExport($filtros), $filename);
+    }
+
+    /**
+     * Exportar Excel de despachos sin siniestro registrado
+     */
+    public function exportarSinSiniestro(Request $request)
+    {
+        if (auth()->user()->rol != 1 && auth()->user()->tipo_rol != 'ADMINISTRACION') {
+            abort(403);
+        }
+
+        $filtros = $request->only(['despacho', 'ciudad']);
+        $filename = 'despachos_sin_siniestro_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new SiniestroSinDespachoExport($filtros), $filename);
+    }
 }
+

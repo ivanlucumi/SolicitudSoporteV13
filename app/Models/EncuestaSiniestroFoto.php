@@ -20,6 +20,8 @@ class EncuestaSiniestroFoto extends Model
         'mime_type',
     ];
 
+    protected $appends = ['url'];
+
     // ─── Relaciones ────────────────────────────────────────────────────────────
 
     public function elemento()
@@ -35,7 +37,16 @@ class EncuestaSiniestroFoto extends Model
     public function getUrlAttribute(): string
     {
         $container = 'siniestro';
-        return "https://" . env('AZURE_STORAGE_ACCOUNT') . ".blob.core.windows.net/{$container}/{$this->ruta_archivo}";
+        $account = 'ststgdoc32'; // Fallback por defecto
+
+        // Obtener la cadena de conexión de ENV o de la Configuración (si está cacheada)
+        $connStr = env('AZURE_STORAGE_CONNECTION_STRING') ?: config('filesystems.disks.azure.connection_string', '');
+        
+        if (preg_match('/AccountName=([^;]+)/', $connStr, $m)) {
+            $account = $m[1];
+        }
+
+        return "https://" . $account . ".blob.core.windows.net/{$container}/{$this->ruta_archivo}";
     }
 
     /**

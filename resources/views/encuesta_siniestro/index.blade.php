@@ -1,4 +1,4 @@
-@extends('layouts.usuarios')
+@extends('layouts.SinSidebar')
 
 @section('title', 'Encuesta de Siniestros')
 @section('cabecera', 'Gestión de Siniestros')
@@ -157,9 +157,15 @@ table.sin-table tr:hover td { background:#f7fafd; }
           @endif
         </td>
         <td style="white-space:nowrap;">
-          <a href="{{ route('encuesta.siniestro.show', $s->id) }}" class="btn-accion btn-ver" title="Ver detalle">
-            <i class="fa fa-eye"></i>
-          </a>
+          @if($s->estado === 'borrador')
+            <a href="{{ route('encuesta.siniestro.create') }}?edit_id={{ $s->id }}" class="btn-accion btn-ver" title="Continuar editando borrador" style="background:#f39c12;">
+              <i class="fa fa-pencil"></i>
+            </a>
+          @else
+            <a href="{{ route('encuesta.siniestro.show', $s->id) }}" class="btn-accion btn-ver" title="Ver detalle">
+              <i class="fa fa-eye"></i>
+            </a>
+          @endif
           <a href="{{ route('encuesta.siniestro.pdf', $s->id) }}" class="btn-accion btn-pdf" title="Descargar PDF" target="_blank">
             <i class="fa fa-file-pdf-o"></i>
           </a>

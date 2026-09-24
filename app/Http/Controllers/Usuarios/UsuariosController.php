@@ -48,24 +48,17 @@ class UsuariosController extends Controller
         $distribucioncantidad = DistribucionE2024::select('numero')->where('codigo_despacho', auth()->user()->cedula)->first();
         //dd($distribucioncantidad);
         
-        
-        
         $registros= LicenciaOffice::where('codigo_despacho', auth()->user()->cedula)->count();
         $respuestas = LicenciaOffice::where('codigo_despacho', auth()->user()->cedula)->get();
         
-       // dd($cantidad,$registros);
-      /* if(!empty($distribucioncantidad)){
-           
-           $cantidad =intval($distribucioncantidad->numero);
-               if( auth()->user()->email == "siriscali@cendoj.ramajudicial.gov.co"  ){
-                       if($registros <= $cantidad){
-                         return view('usuario.LicenciaWindows.Index',compact('cantidad','registros','respuestas'));
-                       }
-               }
-       }*/
-        
         return view('usuario.noticias');
         
+    }
+
+    public function show($id)
+    {
+        // Fallback para evitar BadMethodCallException si alguna ruta tipo /usuarios/{id} es llamada
+        return redirect('usuarios/soporte');
     }
 
     public function audiencias(Request $request)

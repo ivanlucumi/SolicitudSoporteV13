@@ -43,33 +43,66 @@ class CorreoSiniestroService
         $listaDest      = implode(', ', $destinatarios);
 
         try {
-            Mail::send(
-                'encuesta_siniestro.correo',
-                compact('siniestro'),
-                function ($message) use ($destinatarios, $consecutivo, $nombreDespacho, $pdfPath) {
-                    $message->from(
-                        config('mail.from.address', 'informacion@disajcali.gov.co'),
-                        'SISTEMA SIRIS CALI – Gestión de Siniestros'
-                    );
+            $asunto = "Reporte de Siniestro No. {$consecutivo} – {$nombreDespacho}";
+            
+            Mail::send('encuesta_siniestro.correo', compact('siniestro'), function ($mail) use ($destinatarios, $asunto, $pdfPath) {
+                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
+                
+                $to = array_shift($destinatarios);
+                $mail->to($to);
 
-                    $message->to(array_shift($destinatarios));
-
-                    foreach ($destinatarios as $cc) {
-                        $message->cc($cc);
-                    }
-
-                    $message->subject(
-                        "Reporte de Siniestro No. {$consecutivo} – {$nombreDespacho}"
-                    );
-
-                    if ($pdfPath) {
-                        $message->attach($pdfPath, [
-                            'as'   => "Siniestro-{$consecutivo}.pdf",
-                            'mime' => 'application/pdf',
-                        ]);
-                    }
+                foreach ($destinatarios as $cc) {
+                    $mail->cc($cc);
                 }
-            );
+
+                $mail->subject($asunto);
+                $mail->priority(1);
+
+                if ($pdfPath && file_exists($pdfPath)) {
+                    $mail->attach($pdfPath, ['mime' => 'application/pdf']);
+                }
+
+                if (method_exists($mail, 'withSymfonyMessage')) {
+                    $mail->withSymfonyMessage(function (\Symfony\Component\Mime\Email $message) {
+                        try {
+                            $rawMessage = $message->toString();
+                            
+                            $host = env('IMAP_HOST', 'mail.disajcali.gov.co');
+                            $port = env('IMAP_PORT', 993);
+                            $user = env('IMAP_USERNAME', 'informacion@disajcali.gov.co');
+                            $pass = env('IMAP_PASSWORD');
+                            
+                            $imapPath = '{' . $host . ':' . $port . '/imap/ssl}Sent';
+                            
+                            $imapStream = @imap_open($imapPath, $user, $pass);
+                            
+                            if ($imapStream) {
+                                $folders = imap_list($imapStream, '{'.$host.':'.$port.'/imap/ssl}', '*');
+                                \Illuminate\Support\Facades\Log::info("Carpetas IMAP disponibles:", ['folders' => $folders]);
+                                
+                                $sentFolder = $imapPath; // default
+                                if (is_array($folders)) {
+                                    $possibleNames = ['Sent', 'INBOX.Sent', 'Enviados', 'Elementos enviados', 'Sent Items'];
+                                    foreach ($folders as $folder) {
+                                        foreach ($possibleNames as $name) {
+                                            if (str_ends_with(strtolower($folder), strtolower($name))) {
+                                                $sentFolder = $folder;
+                                                break 2;
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                \Illuminate\Support\Facades\Log::info("Guardando en carpeta IMAP:", ['folder' => $sentFolder]);
+                                imap_append($imapStream, $sentFolder, $rawMessage . "\r\n");
+                                imap_close($imapStream);
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error("Error IMAP Siniestro: " . $e->getMessage());
+                        }
+                    });
+                }
+            });
 
             return [
                 'enviado'       => true,
@@ -77,11 +110,11 @@ class CorreoSiniestroService
                 'destinatarios' => $listaDest,
             ];
 
-        } catch (\Exception $e) {
-            Log::error("Error enviando correo siniestro {$consecutivo}: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error encolando correo siniestro {$consecutivo}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return [
                 'enviado'       => false,
-                'error'         => $e->getMessage(),
+                'error'         => 'Excepción: ' . $e->getMessage(),
                 'destinatarios' => $listaDest,
             ];
         }

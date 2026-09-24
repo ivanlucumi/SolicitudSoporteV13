@@ -24,19 +24,34 @@
       </div>
       <div class="panel-body">
         <div class="row">
-          <div class="col-xs-12 col-sm-4">
+          <div class="col-xs-12 col-sm-3">
             <div class="form-group">
               <label><i class="fa fa-calendar"></i> Fecha del Acta <span class="text-danger">*</span></label>
               <input type="date" name="fecha_acta" class="form-control" required value="{{ old('fecha_acta', date('Y-m-d')) }}">
             </div>
           </div>
-          <div class="col-xs-12 col-sm-8">
+          <div class="col-xs-12 col-sm-3">
             <div class="form-group">
               <label><i class="fa fa-building"></i> Despacho / Dependencia</label>
               <input type="text" class="form-control" readonly
                      style="background:#d4edda; font-weight:700; color:#155724; cursor:not-allowed;"
                      value="{{ auth()->user()->name ?? '' }}">
-              <small class="text-muted"><i class="fa fa-lock"></i> Asignado automáticamente de su sesión</small>
+            </div>
+          </div>
+          <div class="col-xs-12 col-sm-4">
+            <div class="form-group">
+              <label><i class="fa fa-map-marker"></i> Edificio / Dirección <span class="text-danger">*</span></label>
+              <input type="text" name="edificio" class="form-control" required 
+                     placeholder="Ej. Palacio de Justicia / Cra 10 #12-15"
+                     value="{{ old('edificio', $despachoInfo->edificio ?? '') }}">
+            </div>
+          </div>
+          <div class="col-xs-12 col-sm-2">
+            <div class="form-group">
+              <label><i class="fa fa-level-up"></i> Piso <span class="text-danger">*</span></label>
+              <input type="text" name="piso" class="form-control" required 
+                     placeholder="Ej. Piso 4"
+                     value="{{ old('piso', $despachoInfo->piso ?? '') }}">
             </div>
           </div>
         </div>
@@ -174,14 +189,12 @@
                         <option value="Escáner">Escáner</option>
                         <option value="Impresora">Impresora</option>
                         <option value="Portátil">Portátil</option>
-                        
-                        <!-- ⬇️ [CÓMO AGREGAR MÁS ELEMENTOS MANUALMENTE] ⬇️ -->
-                        <!-- 1. Añade una nueva línea aquí debajo con el formato: -->
-                        <!-- <option value="Nombre del Elemento">Nombre del Elemento</option> -->
-                        <!-- 2. NO OLVIDES añadir el mismo nombre en la lista de JavaScript (abajo en este archivo) -->
                         <option value="Silla">Silla</option>
                         <option value="Mesa">Mesa</option>
                         <option value="Escritorio">Escritorio</option>
+                        <option value="Diadema">Diadema</option>
+                        <option value="Descansa pies">Descansa pies</option>
+                        <option value="Elementos Personales">Elementos Personales</option>
                       </select>
                     </td>
                     <td><input type="text" name="empleados[0][elementos][0][placa]"
@@ -240,7 +253,7 @@
 // 1. Añade el nombre del nuevo elemento al final de este listado (entre comillas simples, separado por coma).
 // 2. NO OLVIDES añadir la etiqueta <option> en el HTML de arriba.
 var OPCIONES_ELEMENTOS = [
-  'Todo en uno', 'Teclado', 'Mouse', 'Escáner', 'Impresora', 'Portátil', 'Silla', 'Mesa', 'Escritorio'
+  'Todo en uno', 'Teclado', 'Mouse', 'Escáner', 'Impresora', 'Portátil', 'Silla', 'Mesa', 'Escritorio', 'Diadema', 'Descansa pies','Elementos Personales'
 ];
 
 function opcionesSelectHtml(nameAttr, selected) {

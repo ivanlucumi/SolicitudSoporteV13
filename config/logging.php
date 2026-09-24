@@ -58,6 +58,12 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        'email' => [
+            'driver' => 'custom',
+            'via' => App\Logging\EmailLogger::class,
+            'level' => 'error', // Solo enviará correos de errores graves hacia arriba
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),

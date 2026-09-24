@@ -6,6 +6,42 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-10 col-lg-offset-1">
+                
+                @if(session('success'))
+                    <div class="alert alert-success alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <i class="icon fa fa-check"></i> {{ session('success') }}
+                    </div>
+                @endif
+                @if(session('error'))
+                    <div class="alert alert-danger alert-dismissible">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        <i class="icon fa fa-ban"></i> {{ session('error') }}
+                    </div>
+                @endif
+
+                <!-- Panel Carga Masiva -->
+                <div class="panel panel-success" style="margin-top: 20px; border-color: #d6e9c6;">
+                    <div class="panel-heading" style="background-color: #dff0d8; border-color: #d6e9c6; color: #3c763d;">
+                        <h3 class="panel-title">
+                            <i class="glyphicon glyphicon-cloud-upload"></i> Carga Masiva de Enlaces (Atención Virtual)
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <form action="{{ route('acortador.masivo') }}" method="POST" enctype="multipart/form-data" class="form-inline">
+                            @csrf
+                            <div class="form-group">
+                                <label for="excel_file" style="margin-right: 10px;">Seleccionar Excel (.xlsx):</label>
+                                <input type="file" name="excel_file" id="excel_file" class="form-control" accept=".xlsx, .xls" required style="display: inline-block;">
+                            </div>
+                            <button type="submit" class="btn btn-success" style="margin-left: 15px;">
+                                <i class="glyphicon glyphicon-upload"></i> Procesar Archivo
+                            </button>
+                            <p class="help-block" style="margin-top:10px; font-size:12px;">El archivo Excel debe tener encabezados en la primera fila. Las columnas obligatorias son: <strong>codigoDespacho</strong> y <strong>link</strong>.</p>
+                        </form>
+                    </div>
+                </div>
+
                 <!-- Panel principal -->
                 <div class="panel panel-primary">
                     <div class="panel-heading">

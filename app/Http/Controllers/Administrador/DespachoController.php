@@ -73,6 +73,7 @@ class DespachoController extends Controller
             'direccion'          => $request['direccion'],
             'telefono'           => $request['telefono'],
             'correoD'            => $request['correoD'],
+            'atencion_virtual'   => $request['atencion_virtual'],
             'correo_demanda'     => $request['correo_demanda'],
             'correo_memoriales'  => $request['correo_memoriales'],
             'extension'          => $request['extension'],

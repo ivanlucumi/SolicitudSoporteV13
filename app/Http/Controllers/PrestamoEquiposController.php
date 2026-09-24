@@ -34,7 +34,8 @@ class PrestamoEquiposController extends Controller
     public function create()
     {
         $usuario = auth()->user();
-        return view('externo.PrestamoEquipos.create', compact('usuario'));
+        $despachoInfo = \App\Models\Despacho::where('codigoDespacho', $usuario->cedula ?? '')->first();
+        return view('externo.PrestamoEquipos.create', compact('usuario', 'despachoInfo'));
     }
 
     /**
@@ -49,6 +50,8 @@ class PrestamoEquiposController extends Controller
             'cargo_titular'      => 'required|string|max:255',
             'correo_titular'     => 'required|email|max:255',
             'fecha_acta'         => 'required|date',
+            'edificio'           => 'required|string|max:255',
+            'piso'               => 'required|string|max:255',
             'empleados'          => 'required|array|min:1',
             'empleados.*.cedula' => 'required',
             'empleados.*.nombre' => 'required',
@@ -125,16 +128,35 @@ class PrestamoEquiposController extends Controller
             ];
         }
 
-        // ── Validar placas duplicadas en solicitudes activas
-        if (!empty($placasIngresadas)) {
+        // ── Validar placas duplicadas en solicitudes activas y Elementos duplicados por empleado
+        if (!empty($placasIngresadas) || true) {
             $activas = SolicitudPrestamoEquipo::where('estado', '!=', 'Rechazado')->get();
+            $elementosActivosPorEmpleado = [];
+            
             foreach ($activas as $sol) {
                 foreach ((array)$sol->equipos as $empExistente) {
-                    foreach ((array)($empExistente['elementos'] ?? []) as $elEx) {
-                        $px = $elEx['placa'] ?? '';
-                        if ($px && in_array($px, $placasIngresadas)) {
+                    $ced = $empExistente['cedula'] ?? '';
+                    if ($ced) {
+                        foreach ((array)($empExistente['elementos'] ?? []) as $elEx) {
+                            // 1. Recopilar elementos para la validación cruzada
+                            $tipoEx = trim($elEx['elemento'] ?? '');
+                            if ($tipoEx) {
+                                $elementosActivosPorEmpleado[$ced][] = $tipoEx;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Validar que el empleado no esté pidiendo un elemento que ya tiene activo
+            foreach ($request->empleados as $emp) {
+                $cedula = trim($emp['cedula'] ?? '');
+                if ($cedula) {
+                    foreach ($emp['elementos'] ?? [] as $el) {
+                        $tipo = trim($el['elemento'] ?? '');
+                        if ($tipo && isset($elementosActivosPorEmpleado[$cedula]) && in_array($tipo, $elementosActivosPorEmpleado[$cedula])) {
                             return redirect()->back()
-                                ->withErrors("La placa '{$px}' ya fue solicitada en Acta #" . str_pad($sol->id, 4, '0', STR_PAD_LEFT) . '.')
+                                ->withErrors("El servidor con cédula {$cedula} ya tiene una solicitud o préstamo activo para el elemento '{$tipo}'. Puede solicitar otros elementos, pero no el mismo.")
                                 ->withInput();
                         }
                     }
@@ -142,9 +164,16 @@ class PrestamoEquiposController extends Controller
             }
         }
 
-        // Obtener el circuito del despacho logueado
+        // Obtener el circuito del despacho logueado y actualizar su ubicación
         $codigoDespacho = auth()->user()->cedula ?? '';
         $despachoInfo = \App\Models\Despacho::where('codigoDespacho', $codigoDespacho)->first();
+        
+        if ($despachoInfo) {
+            $despachoInfo->edificio = $request->edificio;
+            $despachoInfo->piso = $request->piso;
+            $despachoInfo->save();
+        }
+        
         $circuitoAsignado = $despachoInfo ? $despachoInfo->circuito : null;
 
         $solicitud = new SolicitudPrestamoEquipo();

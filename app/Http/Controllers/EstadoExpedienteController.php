@@ -15,6 +15,7 @@ use App\Models\EstadoExpedientePrestamo;
 use App\Models\Despacho;
 
 use App\Imports\BestdocImports;
+use App\Imports\ExpedienteImport;
 use Excel;
 
 
@@ -309,5 +310,56 @@ class EstadoExpedienteController extends Controller
         $registro->destroy();
         Session::flash('message','Registro de Expediente Eliminado Correctamente');
         return redirect()->route('expediente.registrar.expediente');
+    }
+
+    public function importarExcel(Request $request)
+    {
+        $request->validate([
+            'archivo_excel' => 'required|mimes:xlsx,xls,csv|max:10240', // Max 10MB
+        ]);
+
+        try {
+            $import = new ExpedienteImport();
+            Excel::import($import, $request->file('archivo_excel'));
+
+            $msg = "Importación completada: {$import->insertados} expedientes registrados correctamente.";
+            if ($import->omitidos > 0) {
+                $msg .= " Se omitieron {$import->omitidos} expedientes por estar duplicados (mismo radicado y sede).";
+            }
+
+            Session::flash('success', $msg);
+            return redirect()->back();
+        } catch (\Exception $e) {
+            Session::flash('error', 'Ocurrió un error al importar: ' . $e->getMessage());
+            return redirect()->back();
+        }
+    }
+
+    public function descargarPlantilla()
+    {
+        $headers = [
+            'radicado', 'ni', 'cedula_procesado', 'nombre_procesado', 'delito', 'sede',
+            'almacenado_en', 'no_caja', 'cuadernos', 'folios', 'tipo_expediente',
+            'fecha_digitalizado', 'asunto_archivo', 'fecha_archivo', 'observaciones'
+        ];
+
+        $callback = function() use($headers) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
+            // Fila de ejemplo
+            fputcsv($file, [
+                '12345678901234567890123', 'NI-123', '12345678', 'JUAN PEREZ', 'DELITO EJEMPLO', 'SEDE PRINCIPAL',
+                'ESTANTE A', 'CAJA 1', '1', '100', 'ORDINARIO', '2023-01-01', 'ASUNTO EJEMPLO', '2023-01-01', 'SIN OBSERVACIONES'
+            ]);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=plantilla_expedientes.csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ]);
     }
 }

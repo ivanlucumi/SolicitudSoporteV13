@@ -1,4 +1,4 @@
-@extends('layouts.usuarios')
+@extends('layouts.SinSidebar')
 
 @section('title', 'Detalle Siniestro – ' . $siniestro->consecutivo)
 @section('cabecera', 'Detalle del Siniestro')

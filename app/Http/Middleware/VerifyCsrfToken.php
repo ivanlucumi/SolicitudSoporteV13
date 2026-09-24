@@ -15,5 +15,6 @@ class VerifyCsrfToken extends Middleware
         'api/carnet/*',
         'carnet/consultar',
         'carnet/*',
+        'acortador/shorten',
     ];
 }

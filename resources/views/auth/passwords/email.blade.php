@@ -278,16 +278,7 @@
 </style>
 
 <div class="fixed-container">
-    	                @if (session('error'))
-							<div class="alert alert-danger">
-							{{ session('error') }}
-							</div>
-							@endif
-							@if (session('success'))
-							<div class="alert alert-success">
-							{{ session('success') }}
-							</div>
-						@endif
+
     <div class="login-box">
         <div class="login-image" style="background-image: url(/img/opcion_2.jpg);"></div>
         
@@ -333,4 +324,34 @@
 
 <script src='https://www.google.com/recaptcha/api.js'></script>
 <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+@if(session('success_swal'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            Swal.fire({
+                title: '¡Correo Enviado!',
+                text: "{{ session('success_swal') }}",
+                icon: 'success',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#002147'
+            });
+        });
+    </script>
+@endif
+
+@if(session('error_swal'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            Swal.fire({
+                title: 'Acción Bloqueada',
+                text: "{{ session('error_swal') }}",
+                icon: 'error',
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#dc3545'
+            });
+        });
+    </script>
+@endif
+
 @endsection

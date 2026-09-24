@@ -125,7 +125,7 @@ class User extends Authenticatable
                 $query->whereIn('circuito', $circuitos);
             })
             //->where('tipo', 'DESPACHO')
-            ->whereNull('estado')
+            ->whereRaw("(estado IS NULL OR LOWER(TRIM(estado)) != 'Inactivo')")
             ->where('nombreDespacho', 'NOT LIKE', '%LABORAL%')
             ->where('nombreDespacho', 'NOT LIKE', '%ADMINISTRATIVO%')
             ->orderBy('nombreDespacho'); 

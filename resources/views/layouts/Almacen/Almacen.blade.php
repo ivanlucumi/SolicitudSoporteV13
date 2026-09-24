@@ -24,14 +24,14 @@ scratch. This page gets rid of all links and provides the needed markup only.
 
   
 
-  <link rel="stylesheet" href="/adminlte/bower_components/bootstrap/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="/adminlte/bower_components/font-awesome/css/font-awesome.min.css">
-  <link rel="stylesheet" href="/adminlte/bower_components/Ionicons/css/ionicons.min.css">
-  <link rel="stylesheet" href="/adminlte/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css">
-  <link rel="stylesheet" href="/adminlte/dist/css/AdminLTE.css">
-  <link rel="stylesheet" href="/adminlte/dist/css/skins/skin-black.css">
-  <link rel="stylesheet" href="/adminlte/bower_components/select2/dist/css/select2.min.css">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="{{ asset('adminlte/bower_components/bootstrap/dist/css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/bower_components/font-awesome/css/font-awesome.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/bower_components/Ionicons/css/ionicons.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/bower_components/datatables.net-bs/css/dataTables.bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/dist/css/AdminLTE.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/dist/css/skins/skin-black.css') }}">
+  <link rel="stylesheet" href="{{ asset('adminlte/bower_components/select2/dist/css/select2.min.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/style.css') }}">
 
   @stack('style')
 
@@ -111,7 +111,7 @@ desired effect
               <img src="/img/cerrar.png" href class="user-image" alt="User Image">
 
               <!-- hidden-xs hides the username on small devices so only the image appears. -->
-              <span class="hidden-xs">{!!"  ". auth()->user()->name."   ". auth()->user()->lastname!!}</span>
+              <span class="hidden-xs">{{ auth()->user()->name }} {{ auth()->user()->lastname }}</span>
             </a>
             <ul class="dropdown-menu">
               <!-- The user image in the menu -->
@@ -119,8 +119,8 @@ desired effect
                 <p >
                 <a class="btn btn-danger btn-block " href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Cerrar Sesion
                 </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                        @csrf
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: one;">
+                        {{ csrf_field() }}
                     </form> 
                 </p>
               </li>
@@ -147,21 +147,26 @@ desired effect
       <!-- /.search form -->
 
       <!-- Sidebar Menu -->
-      <ul class="sidebar-menu" data-widget="tree" >
+      <ul class="sidebar-menu" data-widget="treeview" >
         <!--<li class="header">HEADER</li>
          Optionally, you can add icons to the links -->
         <li class="header" style="color: #fff;"><strong>PANEL DE OPCIONES</strong> </li>
         <li><a href="{{route('almacen.index')}}" ><i class="fa fa-newspaper-o"></i> <span >Noticias</span></a></li>
         <li><a href="{{route('almacen.Solicitudes')}}" ><i class="fa fa-pencil-square-o"></i> <span >Solicitudes</span></a></li>
         <li><a href="{{route('almacen.Historial')}}" ><i class="fa fa-area-chart"></i> <span >Historial de Solicitudes</span></a></li>
-        <li><a href="{{route('admin.solicitud_ingreso.index')}}" ><i class="fa fa-sign-in"></i> <span >Solicitudes de Ingreso</span></a></li>
         
-        @if( auth()->user()->email == "almacen@disajcali.gov.co")
+        @if(auth()->user()->email == "almacen@disajcali.gov.co")
          <li><a href="{{route('almacen.Elementos')}}" ><i class="fa fa-area-chart"></i> <span >Elementos</span></a></li>
         @endif
-        @if( auth()->user()->circuito_almacen != "CALI")
+        @if(auth()->user()->circuito_almacen != "CALI")
          <li><a href="{{route('inventarios_circuitos.create')}}" ><span class="mdi mdi-storefront-outline md-60"></span> <span >Mi Inventario</span></a></li>
         @endif
+        
+        <li><a href="{{route('almacen.prestamo.equipos.index')}}" ><i class="fa fa-credit-card"></i> <span >Gestionar Pr&eacute;stamo Equipos</span></a></li>
+        <li><a href="{{route('almacen.prestamo.equipos.creaciones')}}" ><i class="fa fa-list-alt"></i> <span >Mis Creaciones Pendientes</span></a></li>
+        <li><a href="{{route('admin.solicitud_ingreso.index')}}" ><i class="fa fa-credit-card"></i> <span >Gestionar Solicitud Ingreso</span></a></li>
+        
+        
         
       </ul>
       <!-- /.sidebar-menu -->
@@ -228,7 +233,7 @@ desired effect
       FP-IL
     </div>
     <!-- Default to the left -->
-    <strong>Copyright &copy; 2018 <a href="{!! url('/legal')!!}" target="_blank">SIRIS CALI</a>.</strong> All rights reserved.
+    <strong>Copyright &copy; 2018 <a href="{{ url('/legal') }}" target="_blank">SIRIS CALI</a>.</strong> All rights reserved.
   </footer>
 
   <!-- Control Sidebar -->
@@ -314,15 +319,15 @@ desired effect
 
 <!-- jQuery 3 -->
 <!-- jQuery 3 -->
-<script src="/adminlte/bower_components/jquery/dist/jquery.min.js"></script>
-<script src="/adminlte/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
-<script src="/adminlte/bower_components/datatables.net/js/jquery.dataTables.min.js"></script> 
-<script src="/adminlte/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js"></script> 
-<script src="/adminlte/dist/js/adminlte.min.js"></script>
-<script src="/js/adminlte-layout.js"></script>
+<script src="{{ asset('adminlte/bower_components/jquery/dist/jquery.min.js') }}"></script>
+<script src="{{ asset('adminlte/bower_components/jquery/dist/jquery-3.2.1.min.js') }}"></script>
+<script src="{{ asset('adminlte/bower_components/bootstrap/dist/js/bootstrap.min.js') }}"></script>
+<script src="{{ asset('adminlte/bower_components/datatables.net/js/jquery.dataTables.min.js') }}"></script> 
+<script src="{{ asset('adminlte/bower_components/datatables.net-bs/js/dataTables.bootstrap.min.js') }}"></script> 
+<script src="{{ asset('adminlte/dist/js/adminlte.min.js') }}"></script>
 
-<script src="/adminlte/bower_components/select2/dist/js/select2.full.min.js"></script>
-<script src="/adminlte/plugins/iCheck/icheck.min.js"></script>
+<script src="{{ asset('adminlte/bower_components/select2/dist/js/select2.full.min.js') }}"></script>
+<script src="{{ asset('adminlte/plugins/iCheck/icheck.min.js') }}"></script>
 
 @stack('scripts')
 

@@ -558,7 +558,7 @@ class AdministradorController extends Controller
     ->withCount('actividadesDespacho')
     ->whereRaw('LOWER(nombreDespacho) NOT LIKE ?', ['%laboral%'])
     //->where('tipo', 'DESPACHO')
-    ->whereNull('estado')
+    ->whereRaw("(estado IS NULL OR LOWER(TRIM(estado)) != 'Inactivo')")
     ->orderByDesc('actividades_despacho_count')
     ->get();
     

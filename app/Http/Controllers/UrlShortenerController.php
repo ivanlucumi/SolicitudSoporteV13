@@ -152,4 +152,20 @@ public function parseUserAgent($userAgent)
         $url= "a/".$shortenedUrl->short_code;
         return view('administrador.Acortador.Estadistica', compact('shortenedUrl', 'clicks','url'));
     }
+
+    public function importarMasivo(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'excel_file' => 'required|mimes:xlsx,xls,csv|max:10240'
+        ]);
+
+        try {
+            $import = new \App\Imports\AcortadorDespachosImport();
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('excel_file'));
+
+            return redirect()->back()->with('success', "Importación completada. Se actualizaron {$import->procesados} despachos. (Errores/No encontrados: {$import->errores})");
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al procesar el archivo: ' . $e->getMessage());
+        }
+    }
 }

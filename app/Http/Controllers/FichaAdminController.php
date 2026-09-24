@@ -103,21 +103,25 @@ class FichaAdminController extends Controller
         //  auxrecospa02cali@cendoj.ramajudicial.gov.co
             
         
-        Mail::send('emails/fichas/CambioTipoSolicitud', $data, function ($mail) use ($asunto,$correoNotificacion,$responsable,$anexo,$email_historico,$email_noti) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($responsable);
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            });
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CambioTipoSolicitud',
+            $data,
+            $responsable,
+            null,
+            $asunto,
+            []
+        );
             
-        Mail::send('emails/fichas/CambioTipoSolicitud', $data, function ($mail) use ($asunto,$correoNotificacion,$responsable,$anexo,$email_historico,$email_noti) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($email_historico);
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            });
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CambioTipoSolicitud',
+            $data,
+            $email_historico,
+            null,
+            $asunto,
+            []
+        );
             
             
          if($tipo->tipo_solicitud =='AUDIENCIA GARANTIAS ACTOS URGENTES'){ 
@@ -137,25 +141,28 @@ class FichaAdminController extends Controller
                                                 'text' => $text
                                         ]);
                                         
-                Mail::send('emails/fichas/CambioTipoSolicitud', $data, function ($mail) use ($asunto,$correoNotificacion,$responsable,$anexo,$email_historico,$email_noti) {
-                    $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                    $mail->to('saspacali@cendoj.ramajudicial.gov.co');
-                    $mail->subject($asunto);
-                    $mail->priority(1); // Alta prioridad
-                    //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-                });
+                \App\Services\CorreoService::encolarYEnviar(
+                    $tipo->id,
+                    'emails/fichas/CambioTipoSolicitud',
+                    $data,
+                    'saspacali@cendoj.ramajudicial.gov.co',
+                    null,
+                    $asunto,
+                    []
+                );
          }
          
          if($tipo->tipo_solicitud !='AUDIENCIA GARANTIAS ACTOS URGENTES'){ 
              
-             Mail::send('emails/fichas/CambioTipoSolicitud', $data, function ($mail) use ($asunto,$correoNotificacion,$responsable,$anexo,$email_historico,$email_noti) {
-                    $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                    $mail->to($email_noti);
-                    $mail->cc('auxrecospa02cali@cendoj.ramajudicial.gov.co');
-                    $mail->subject($asunto);
-                    $mail->priority(1); // Alta prioridad
-                    //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-                }); 
+             \App\Services\CorreoService::encolarYEnviar(
+                    $tipo->id,
+                    'emails/fichas/CambioTipoSolicitud',
+                    $data,
+                    $email_noti,
+                    'auxrecospa02cali@cendoj.ramajudicial.gov.co',
+                    $asunto,
+                    []
+                );
          
          }
         
@@ -263,14 +270,15 @@ class FichaAdminController extends Controller
         $email_historico ="avargasmo@cendoj.ramajudicial.gov.co";
         $email_historico2 ="yordoneg@cendoj.ramajudicial.gov.co";
         
-        Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) use ($documento,$asunto,$anexo,$correoNotificacion) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to('soportesiris@outlook.com');
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            });
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFichaDespacho',
+            $data,
+            'soportesiris@outlook.com',
+            null,
+            $asunto,
+            []
+        );
 
         
         // Lista de correos a los que NO se debe enviar notificación en copia
@@ -283,46 +291,32 @@ class FichaAdminController extends Controller
             'j06pctoespcali@cendoj.ramajudicial.gov.co',
         ];
         
-        Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) 
-            use ($documento, $asunto, $anexo, $correoDes, $responsable, $email_historico, $correosBloqueados) {
-        
-            $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-            $mail->to($responsable);
-            $mail->subject($asunto);
-            $mail->priority(1); // Alta prioridad
-        
-            // Normalizamos a minúsculas para evitar errores por mayúsculas
-            $correoDes = strtolower(trim($correoDes));
-        
-            // Validamos que NO esté en la lista de bloqueados
-            if (!in_array($correoDes, $correosBloqueados)) {
-                $mail->cc($correoDes);
-            }
-        
-            // Adjuntos (si los necesitas activar)
-            /*
-            $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento, [
-                'mime' => "application/octet-stream",
-            ]);
-        
-            $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo, [
-                'mime' => "application/octet-stream",
-            ]);
-            */
-        });
+        $correoDes = strtolower(trim($correoDes));
+        $cc_array = [];
+        if (!in_array($correoDes, $correosBloqueados)) {
+            $cc_array[] = $correoDes;
+        }
+
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFichaDespacho',
+            $data,
+            $responsable,
+            $cc_array,
+            $asunto,
+            []
+        );
         
         
-        
-        
-        Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) use ($documento,$asunto,$anexo,$correoDes,$responsable,$email_historico,$email_historico2) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($email_historico);
-                //$mail->cc($email_historico2);
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            }); 
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFichaDespacho',
+            $data,
+            $email_historico,
+            null,
+            $asunto,
+            []
+        );
          
             
         
@@ -339,36 +333,37 @@ class FichaAdminController extends Controller
 
         // Check if the type is in the allowed array
         if (in_array($tipoSolicitud, $allowedTypes)) {
-            Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) use ($documento,$asunto,$correoNotificacion,$anexo) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to('recospacali@cendoj.ramajudicial.gov.co');
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            }); 
+            \App\Services\CorreoService::encolarYEnviar(
+                $tipo->id,
+                'emails/fichas/CorreoFichaDespacho',
+                $data,
+                'recospacali@cendoj.ramajudicial.gov.co',
+                null,
+                $asunto,
+                []
+            );
             
         }
         
-         Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto,$correoNotificacion,$anexo) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($correoNotificacion);
-                $mail->cc('soportesiris@outlook.com');
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            }); 
+         \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFicha',
+            $data,
+            $correoNotificacion,
+            'soportesiris@outlook.com',
+            $asunto,
+            []
+        );
             
-            
-        Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) use ($documento,$asunto,$anexo,$correoNotificacion,$email_historico2) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($email_historico2);
-                $mail->subject($asunto);
-                $mail->priority(1);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            });
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFichaDespacho',
+            $data,
+            $email_historico2,
+            null,
+            $asunto,
+            []
+        );
            
          //DB::commit();
          Session::flash('success', 'Se Remitio solicitud con Exito!');
@@ -468,45 +463,59 @@ class FichaAdminController extends Controller
         $responsable = auth()->user()->email;
         $email_historico ="avargasmo@cendoj.ramajudicial.gov.co";
         
-        Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) use ($documento,$asunto,$anexo,$correoDes,$responsable,$email_historico) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                //$mail->to($correoDes);
-                $mail->to('auxrecospa02cali@cendoj.ramajudicial.gov.co');
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            });  
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFichaDespacho',
+            $data,
+            'auxrecospa02cali@cendoj.ramajudicial.gov.co',
+            null,
+            $asunto,
+            [
+                "/home/disajcal/public_html/fichaPreliminar/" . $documento,
+                "/home/disajcal/public_html/fichaPreliminar/" . $anexo
+            ]
+        );
             
         
-        Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) use ($documento,$asunto,$anexo,$correoDes,$responsable,$email_historico) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($responsable);
-                $mail->cc($correoDes);
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            }); 
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFichaDespacho',
+            $data,
+            $responsable,
+            $correoDes,
+            $asunto,
+            [
+                "/home/disajcal/public_html/fichaPreliminar/" . $documento,
+                "/home/disajcal/public_html/fichaPreliminar/" . $anexo
+            ]
+        );
         
-        Mail::send('emails/fichas/CorreoFichaDespacho', $data, function ($mail) use ($documento,$asunto,$anexo,$correoDes,$responsable,$email_historico) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($email_historico);
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            }); 
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFichaDespacho',
+            $data,
+            $email_historico,
+            null,
+            $asunto,
+            [
+                "/home/disajcal/public_html/fichaPreliminar/" . $documento,
+                "/home/disajcal/public_html/fichaPreliminar/" . $anexo
+            ]
+        );
          
             
-        Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto,$correoNotificacion,$anexo) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($correoNotificacion);
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $anexo,[  'mime' => "application/octet-stream", ]);
-            }); 
+        \App\Services\CorreoService::encolarYEnviar(
+            $tipo->id,
+            'emails/fichas/CorreoFicha',
+            $data,
+            $correoNotificacion,
+            null,
+            $asunto,
+            [
+                "/home/disajcal/public_html/fichaPreliminar/" . $documento,
+                "/home/disajcal/public_html/fichaPreliminar/" . $anexo
+            ]
+        );
         
         
          DB::commit();
@@ -559,7 +568,7 @@ class FichaAdminController extends Controller
    
    public function despachoDisponible()
 {
-    $despachos = Despacho::whereNull('estado')
+    $despachos = Despacho::whereRaw("(estado IS NULL OR LOWER(TRIM(estado)) != 'Inactivo')")
     ->where('nombreDespacho', 'LIKE', '%penal%')
     ->where('circuito', 'CALI')
     ->orderBy('nombreDespacho')
@@ -644,7 +653,31 @@ public function inactivar()
 }
     
 
-    
+        public function auditoriaCorreos(Request $request)
+    {
+        // Restricción: Solo permitir al correo específico
+        if (auth()->user()->email !== 'yordoneg@cendoj.ramajudicial.gov.co') {
+            return redirect()->route('adminfichas.index')->with('error', 'No tiene permisos para acceder a la auditoría de correos.');
+        }
 
-   
+        $correos = \App\Models\RegistroCorreo::orderBy('created_at', 'desc')->paginate(50);
+        return view('fichaRemision.Preliminar.CorreosAuditoria', compact('correos'));
+    }
+
+    public function reenviarCorreoAuditoria($id)
+    {
+        if (auth()->user()->email !== 'yordoneg@cendoj.ramajudicial.gov.co') {
+            return redirect()->route('adminfichas.index')->with('error', 'No tiene permisos.');
+        }
+
+        $registro = \App\Models\RegistroCorreo::findOrFail($id);
+        
+        $exito = \App\Services\CorreoService::enviarDesdeRegistro($registro);
+
+        if ($exito) {
+            return redirect()->back()->with('success', 'El correo fue reenviado exitosamente.');
+        } else {
+            return redirect()->back()->with('error', 'El correo volvió a fallar. Revise el mensaje de error.');
+        }
+    }
 }

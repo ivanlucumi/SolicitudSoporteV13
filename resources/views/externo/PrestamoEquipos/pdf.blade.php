@@ -145,6 +145,10 @@
   {{-- ========== SECCIÓN 1: DATOS DEL TITULAR ========== --}}
   <div class="seccion-titulo">1. Datos del Servidor del Titular del Despacho</div>
 
+  @php
+      $despachoInfo = \App\Models\Despacho::where('codigoDespacho', $solicitud->codigo_despacho)->first();
+  @endphp
+
   <table class="tabla-datos">
     <tr>
       <td class="campo">Nombre</td>
@@ -161,6 +165,14 @@
     <tr>
       <td class="campo">Despacho / Dependencia</td>
       <td class="valor">{{ $solicitud->despacho }}</td>
+    </tr>
+    <tr>
+      <td class="campo">Ubicación (Edificio/Dirección)</td>
+      <td class="valor">{{ $despachoInfo ? $despachoInfo->edificio : '____________________________________________' }}</td>
+    </tr>
+    <tr>
+      <td class="campo">Piso / Oficina</td>
+      <td class="valor">{{ $despachoInfo ? $despachoInfo->piso : '____________________________________________' }}</td>
     </tr>
     <tr>
       <td class="campo">Correo Institucional</td>

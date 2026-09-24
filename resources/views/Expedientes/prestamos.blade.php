@@ -149,13 +149,12 @@ $('a.expedientes_entregar').click(function () {
 
                     },*/
                 success:function(data){
-                console.log(data.expediente);
-                $('#id_expediente').val(id);
-                $('#procesado').val(data[0].expediente.cedula_procesado +" "+ data[0].expediente.nombre_procesado);
-                $('#expediente').val(data[0].expediente.radicado);
-                $('#prestado_a_despacho').val(data[0].prestado_a_despacho);
-                $('#prestado_a_cedula').val(data[0].prestado_a_cedula +" "+ data[0].prestado_a_nombre);
-                //$('#procesado').val(event.fecha);
+                console.log(data);
+                $('#modal_devolver_expediente #id_expediente').val(id);
+                $('#modal_devolver_expediente #procesado').val(data[0].expediente.cedula_procesado +" "+ data[0].expediente.nombre_procesado);
+                $('#modal_devolver_expediente #expediente').val(data[0].expediente.radicado);
+                $('#modal_devolver_expediente #prestado_a_despacho').val(data[0].prestado_a_despacho);
+                $('#modal_devolver_expediente #prestado_a_cedula').val(data[0].prestado_a_cedula +" "+ data[0].prestado_a_nombre);
                 $('#modal_devolver_expediente').modal('show');
               },
 

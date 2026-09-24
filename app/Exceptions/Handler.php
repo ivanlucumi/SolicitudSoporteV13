@@ -4,6 +4,7 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 class Handler extends ExceptionHandler
 {
@@ -35,7 +36,14 @@ class Handler extends ExceptionHandler
     public function register()
     {
         $this->reportable(function (Throwable $e) {
-            //
+            // Registramos de forma explícita el error con toda la información de contexto útil
+            Log::error('Excepción Crítica en la Aplicación: ' . $e->getMessage(), [
+                'url' => request()->fullUrl(),
+                'ip' => request()->ip(),
+                'archivo' => $e->getFile(),
+                'linea' => $e->getLine(),
+                'traza' => $e->getTraceAsString(),
+            ]);
         });
     }
 

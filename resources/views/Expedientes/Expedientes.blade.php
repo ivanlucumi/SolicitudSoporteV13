@@ -13,14 +13,15 @@
         </div>
     </div>
 
-    <div class="col-xs-12 col-sm-3">
-        <div class="container">
-            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#ModalExpediente" data-whatever="@mdo">REGISTRAR EXPEDIENTE</button>
+    <div class="col-xs-12 col-sm-4">
+        <div class="btn-group" role="group" style="margin-top: 8px;">
+            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#ModalExpediente" data-whatever="@mdo"><i class="fa fa-plus"></i> NUEVO</button>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#ModalImportarExcel"><i class="fa fa-file-excel-o"></i> IMPORTAR</button>
+            <a href="{{ route('expediente.descargar.plantilla') }}" class="btn btn-info" title="Descargar Plantilla CSV"><i class="fa fa-download"></i> PLANTILLA</a>
         </div>
     </div>
    
-   
-    <div class="col-xs-12 col-sm-7">
+    <div class="col-xs-12 col-sm-6">
         <div class="" style="text-align: right">
 
             <nav class="navbar navbar-light bg-light">
@@ -103,7 +104,7 @@
                         <th>ESTADO</th>
                         <th>PRESTAR</th>
                         <th>EDITAR</th>
-                        <th>ELIMINAR</th>
+                        <!-- <th>ELIMINAR</th> (Se oculta para evitar pérdida de historial) -->
                     </tr>
                   </thead>
 
@@ -147,12 +148,13 @@
                                           <th scope="row">
                                             <a href="{{ route('expediente.editar.expediente', $expediente->id) }}" class="btn btn-warning btn-block fa fa-pencil"> </a>
                                           </th>
-                                          <th scope="row">
+                                          <!-- Eliminar oculto -->
+                                          <!-- <th scope="row">
                                               <a  class=" active cambiar-tipo btn-sm " id="{{ $expediente->id }}"
                                                 data-toggle="modal" href="#modal-entregar" data-id="{{$expediente->id}}"
                                                 data-expediente="{{$expediente->radicado}}" data-target="#myModal" title="ELIMINAR RADICADO" > <i class="btn btn-danger fa fa-close"></i>
                                             </a>
-                                          </th>
+                                          </th> -->
 
 
                                       </tr>
@@ -171,6 +173,35 @@
         </div>
   </div>
 
+</div>
+
+<!-- MODAL IMPORTAR EXCEL -->
+<div class="modal fade" id="ModalImportarExcel" tabindex="-1" role="dialog" aria-labelledby="ModalImportarExcelLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <form action="{{ route('expediente.importar.excel') }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        <div class="modal-header" style="background-color: #004182; color: #fff;">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #fff;"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="ModalImportarExcelLabel"><i class="fa fa-file-excel-o"></i> Importar Expedientes desde Excel</h4>
+        </div>
+        <div class="modal-body">
+          <p>Seleccione un archivo de Excel o CSV para importar expedientes. Asegúrese de usar la estructura de la plantilla.</p>
+          <div class="form-group">
+            <label for="archivo_excel">Archivo (Excel / CSV)</label>
+            <input type="file" class="form-control" name="archivo_excel" id="archivo_excel" accept=".xlsx, .xls, .csv" required>
+          </div>
+          <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i> Los expedientes con un Radicado y Sede que ya existan en la base de datos serán omitidos automáticamente para evitar duplicados.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+          <button type="submit" class="btn btn-primary"><i class="fa fa-upload"></i> Subir e Importar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 @include('Expedientes.ModalExpedientes')
@@ -210,13 +241,13 @@ $('a.expedientes_entregar').click(function () {
 
                     },*/
                 success:function(data){
-                console.log(data.expediente);
-                $('#id').val(data[0].id);
-                $('#radicado').val(data[0].radicado);
-                $('#ni').val(data[0].ni);
-                $('#nombre_procesado').val(data[0].nombre_procesado);
-                $('#cedula_procesado').val(data[0].cedula_procesado);
-                $('#sede').val(data[0].sede);
+                console.log(data);
+                $('#form-almacenar-detenido #id').val(data[0].id);
+                $('#form-almacenar-detenido #radicado').val(data[0].radicado);
+                $('#form-almacenar-detenido #ni').val(data[0].ni);
+                $('#form-almacenar-detenido #nombre_procesado').val(data[0].nombre_procesado);
+                $('#form-almacenar-detenido #cedula_procesado').val(data[0].cedula_procesado);
+                $('#form-almacenar-detenido #sede').val(data[0].sede);
                 $('#exampleModal').modal('show');
               },
 

@@ -14,7 +14,7 @@ return [
     */
 
     'default' => env('MAIL_MAILER', 'smtp'),
-
+    'archive_bcc' => env('MAIL_ARCHIVE_BCC'),
     /*
     |--------------------------------------------------------------------------
     | Mailer Configurations

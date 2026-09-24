@@ -23,7 +23,19 @@ use App\Http\Controllers\Administrador\InstitucionalController as InstitucionalC
 
 //NORMALIZACION
 use App\Http\Controllers\NormalizacionController;
+use App\Http\Controllers\PublicacionController;
 
+Route::get('/check-imap-folders', function() {
+    $host = env('IMAP_HOST', 'mail.disajcali.gov.co');
+    $port = env('IMAP_PORT', 993);
+    $user = env('IMAP_USERNAME', 'informacion@disajcali.gov.co');
+    $pass = env('IMAP_PASSWORD');
+    $stream = @imap_open('{'.$host.':'.$port.'/imap/ssl}', $user, $pass);
+    if (!$stream) return 'Error: ' . imap_last_error();
+    $folders = imap_list($stream, '{'.$host.':'.$port.'/imap/ssl}', '*');
+    imap_close($stream);
+    return response()->json($folders);
+});
 
 use App\Http\Controllers\Administrador\DirectorioController;
 use App\Http\Controllers\Administrador\BannerController;
@@ -284,11 +296,27 @@ Route::middleware(['auth', 'administrador'])->group(function() {
     Route::post('/administrador/prestamo-equipos/estado/{id}', [AdminPrestamoEquiposController::class, 'actualizarEstado'])->name('admin.prestamo.equipos.estado');
 });
 
-// ALMACÉN: Gestión de solicitudes de préstamo de equipos
+Route::get('/debug-migrate-sst', function() {
+    try {
+        $result = \Illuminate\Support\Facades\DB::select("SHOW CREATE TABLE seguridad_st");
+        return "<pre>" . print_r($result[0], true) . "</pre>";
+    } catch (\Exception $e) {
+        return "Error: " . $e->getMessage();
+    }
+});
+Route::get('/debug-despachos', function() {
+    return \App\Models\SolicitudPrestamoEquipo::latest()->first()->equipos ?? [];
+});
 Route::middleware(['auth', 'almacen'])->group(function() {
+    Route::get('/almacen/prestamo-equipos/buscar-empleado', [\App\Http\Controllers\ReporteFallasController::class, 'buscarEmpleado'])->name('almacen.prestamo.equipos.buscar_empleado');
+    Route::get('/almacen/prestamo-equipos/mis-creaciones', [\App\Http\Controllers\AdminPrestamoEquiposController::class, 'creacionesPendientes'])->name('almacen.prestamo.equipos.creaciones');
     Route::get('/almacen/prestamo-equipos', [AdminPrestamoEquiposController::class, 'indexAlmacen'])->name('almacen.prestamo.equipos.index');
+    Route::get('/almacen/prestamo-equipos/crear', [AdminPrestamoEquiposController::class, 'createAlmacen'])->name('almacen.prestamo.equipos.create');
+    Route::post('/almacen/prestamo-equipos/guardar', [AdminPrestamoEquiposController::class, 'storeAlmacen'])->name('almacen.prestamo.equipos.store');
     Route::post('/almacen/prestamo-equipos/gestionar/{id}', [AdminPrestamoEquiposController::class, 'gestionarSolicitud'])->name('almacen.prestamo.equipos.gestionar');
     Route::get('/almacen/prestamo-equipos/pdf/{id}', [AdminPrestamoEquiposController::class, 'verPdf'])->name('almacen.prestamo.equipos.pdf');
+    Route::get('/almacen/prestamo-equipos/pdf-generado/{id}', [AdminPrestamoEquiposController::class, 'descargarPdfAlmacen'])->name('almacen.prestamo.equipos.pdf_generado');
+    Route::post('/almacen/prestamo-equipos/subir-pdf/{id}', [AdminPrestamoEquiposController::class, 'subirPdfAlmacen'])->name('almacen.prestamo.equipos.subir_pdf');
     Route::get('/almacen/prestamo-equipos/excel', [AdminPrestamoEquiposController::class, 'descargarExcel'])->name('almacen.prestamo.equipos.excel');
     Route::post('/almacen/prestamo-equipos/marcar-elemento/{id}', [AdminPrestamoEquiposController::class, 'marcarElementoEntregado'])->name('almacen.prestamo.equipos.marcar_elemento');
 
@@ -328,12 +356,19 @@ Route::middleware(['auth'])->prefix('encuesta/siniestro')->name('encuesta.sinies
     Route::get('/ajax/empleados/{codigo}', [EncuestaSiniestroController::class, 'ajaxEmpleados'])->name('ajax.empleados');
     Route::get('/ajax/inventario/{codigo}', [EncuestaSiniestroController::class, 'ajaxInventario'])->name('ajax.inventario');
 
+    // ─── DASHBOARD ESTADÍSTICO ADMIN (deben ir antes de /{id}) ───────────────
+    Route::get('/admin/dashboard', [EncuestaSiniestroController::class, 'adminDashboard'])->name('admin.dashboard');
+    Route::get('/admin/exportar/elementos', [EncuestaSiniestroController::class, 'exportarElementos'])->name('admin.exportar.elementos');
+    Route::get('/admin/exportar/sin-siniestro', [EncuestaSiniestroController::class, 'exportarSinSiniestro'])->name('admin.exportar.sin');
+
     // Finalizar siniestro (genera PDF + envía correo)
     Route::post('/{id}/finalizar', [EncuestaSiniestroController::class, 'finalizar'])->name('finalizar');
     // Reenviar correo
     Route::post('/{id}/reenviar', [EncuestaSiniestroController::class, 'reenviarCorreo'])->name('reenviar');
     // Descargar PDF
     Route::get('/{id}/pdf', [EncuestaSiniestroController::class, 'generarPdf'])->name('pdf');
+    // Editar
+    Route::get('/{id}/editar', [EncuestaSiniestroController::class, 'edit'])->name('edit');
     // Detalle
     Route::get('/{id}', [EncuestaSiniestroController::class, 'show'])->name('show');
 });
@@ -636,6 +671,8 @@ Route::group(['prefix' => 'registro/expedientes'], function()
     Route::post('/prestamo', [EstadoExpedienteController::class,'registro_prestamos'])->name('expediente.registrar.prestamo');
     Route::get('/expedientes', [EstadoExpedienteController::class,'registro_expedientes'])->name('expediente.registrar.expediente');
     Route::post('/registrar/expedientes', [EstadoExpedienteController::class,'save_registro_expedientes'])->name('expediente.save.expediente');
+    Route::post('/importar/expedientes', [EstadoExpedienteController::class,'importarExcel'])->name('expediente.importar.excel');
+    Route::get('/plantilla/expedientes', [EstadoExpedienteController::class,'descargarPlantilla'])->name('expediente.descargar.plantilla');
     Route::get('/editar/expedientes/{id}', [EstadoExpedienteController::class,'editar_registro_expedientes'])->name('expediente.editar.expediente');
     Route::put('/actualizar/expedientes/{id}', [EstadoExpedienteController::class,'update_registro_expedientes'])->name('expediente.actualizar.expediente');
     Route::get('/historial/prestamo', [EstadoExpedienteController::class,'historial_prestamos'])->name('expediente.historial.prestamo');
@@ -707,6 +744,10 @@ Route::get('/solicitud/ficha/preliminar', [FichaPreliminarPublicoController::cla
 Route::post('/solicitud/ficha/preliminar/save', [FichaPreliminarPublicoController::class,'Ficha_Preliminar_store'])->name('publico.ficha.preliminar.save');
 Route::get('/consulta/ficha/preliminar/', [FichaPreliminarPublicoController::class,'Ficha_Preliminar_consulta'])->name('publico.ficha.preliminar.consulta');
 Route::post('/consulta/ficha/preliminar/resultado', [FichaPreliminarPublicoController::class,'Ficha_Preliminar_consulta_resultado'])->name('publico.ficha.preliminar.consulta.resultado');
+
+Route::get('/reload-captcha', function () {
+    return response()->json(['captcha' => captcha_img()]);
+});
 
 
 
@@ -785,7 +826,7 @@ Route::get('/consulta/cedula/corte/{cedula}', [EventoIntegracionLController::cla
 Route::post('/store/mesa/trabajo', [EventoIntegracionLController::class,'storeMesaTrabajo'])->name('corte.evento.store')->middleware(Authenticate::class);
 
 Route::get('/elecion/representante/empleados/funcionarios/rama/judicial', function () {
-    return "HOLA, YA NO EST��� DISPONIBLE EL M���DULO";//view('target.copasst');
+    return "HOLA, YA NO EST DISPONIBLE EL MDULO";//view('target.copasst');
 });
 
 
@@ -1021,6 +1062,10 @@ Route::group(['prefix' => '/administracion/solicitud/fichas'], function(){
 	Route::get('/despacho/disponible',              [FichaAdminController::class,'despachoDisponible'])->name('adminfichas.despacho.disponible'); 
 	Route::post('/despachos/activar/', [FichaAdminController::class, 'activar'])->name('despachos.activar');
 	Route::get('/despachos/inactivar', [FichaAdminController::class, 'inactivar'])->name('despachos.inactivar');
+
+	// AUDITORIA CORREOS
+	Route::get('/correos-auditoria', [FichaAdminController::class, 'auditoriaCorreos'])->name('fichas.correos.auditoria');
+	Route::post('/correos/{id}/reenviar', [FichaAdminController::class, 'reenviarCorreoAuditoria'])->name('fichas.correos.reenviar');
 });
 
 
@@ -1147,6 +1192,16 @@ Route::group(['prefix' => 'estadistica'], function(){
 
 Route::group(['prefix' => 'administrador'], function(){
     
+    // RUTAS AZURE FOLDER SYNC
+    Route::get('/azure-folders', [\App\Http\Controllers\Administrador\AzureFolderSyncController::class, 'index'])->name('admin.azure_folders.index');
+    Route::post('/azure-folders', [\App\Http\Controllers\Administrador\AzureFolderSyncController::class, 'store'])->name('admin.azure_folders.store');
+    Route::delete('/azure-folders/{id}', [\App\Http\Controllers\Administrador\AzureFolderSyncController::class, 'destroy'])->name('admin.azure_folders.destroy');
+    Route::post('/azure-folders/sync', [\App\Http\Controllers\Administrador\AzureFolderSyncController::class, 'sync'])->name('admin.azure_folders.sync');
+
+    //despacho de archivo
+    Route::get('/encuestas-trabajo-casa', [\App\Http\Controllers\AdminEncuestaTrabajoCasaController::class, 'index'])->name('admin.trabajocasa.index');
+	Route::get('/encuestas-trabajo-casa/excel', [\App\Http\Controllers\AdminEncuestaTrabajoCasaController::class, 'exportarExcel'])->name('admin.trabajocasa.excel');
+
     //descargar backup de la db
     Route::get('/descargar/db/de/froma/manual',	[AdministradorController::class,'descargarArchivo']);
 	
@@ -1540,6 +1595,7 @@ Route::get('revisados/protocolo/dos/ok',[DigitalizacionExcelController::class,'R
 	//Estadistica de uso de URL
 	
     Route::get('/estadistica/acortador/', [UrlShortenerController::class, 'Estadistica'])->name('stats.acortadores')->middleware([Authenticate::class, AdministradorMiddleware::class]);
+    Route::post('/acortador-importar-excel', [UrlShortenerController::class, 'importarMasivo'])->name('acortador.masivo')->middleware([Authenticate::class, AdministradorMiddleware::class]);
     Route::get('/acortador/stats/{code}', [UrlShortenerController::class, 'showStats'])->name('stats')->middleware([Authenticate::class, AdministradorMiddleware::class]);
     
     //USUARIOS SGDE
@@ -2827,8 +2883,33 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/guardar', [\App\Http\Controllers\EncuestaLlamadaController::class, 'guardarEncuesta'])->name('encuestas_llamadas.guardar');
         Route::post('/importar-csv', [\App\Http\Controllers\EncuestaLlamadaController::class, 'importarCSV'])->name('encuestas_llamadas.importar');
     });
+
 });
+
+// ==========================================
+// MÓDULO ENCUESTA TRABAJO EN CASA (PÚBLICO)
+// ==========================================
+Route::get('/trabajo-casa', [\App\Http\Controllers\EncuestaTrabajoCasaController::class, 'paso1'])->name('trabajo_casa.paso1');
+Route::post('/trabajo-casa/validar', [\App\Http\Controllers\EncuestaTrabajoCasaController::class, 'validarPaso1'])->name('trabajo_casa.validar');
+Route::get('/trabajo-casa/paso2', [\App\Http\Controllers\EncuestaTrabajoCasaController::class, 'paso2'])->name('trabajo_casa.paso2');
+Route::post('/trabajo-casa/guardar', [\App\Http\Controllers\EncuestaTrabajoCasaController::class, 'guardar'])->name('trabajo_casa.guardar');
+
 // ==========================================
 // BACKUP DE BASE DE DATOS
 // ==========================================
 Route::get('/backup/generar', [\App\Http\Controllers\Administrador\AzureController::class, 'generarYSubirBackup'])->name('backup.generar');
+
+// ==========================================
+// MÓDULO PUBLICACIONES (Acuerdos y Circulares)
+// ==========================================
+Route::get('/acuerdos_y_circulares', [PublicacionController::class, 'publicoIndex'])->name('publicaciones.public');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/publicaciones', [PublicacionController::class, 'adminIndex'])->name('admin.publicaciones.index');
+    Route::post('/admin/publicaciones', [PublicacionController::class, 'store'])->name('admin.publicaciones.store');
+    Route::delete('/admin/publicaciones/{id}', [PublicacionController::class, 'destroy'])->name('admin.publicaciones.destroy');
+});
+
+Route::get('/test-error-log', function () {
+    throw new \Exception('Esta es una prueba de error forzado para el sistema de logs por correo. Puedes ignorar o eliminar este mensaje.');
+});

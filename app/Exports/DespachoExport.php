@@ -13,7 +13,7 @@ class DespachoExport implements FromCollection, WithHeadings, ShouldAutoSize, Wi
 {
     public function collection()
     {
-        $despachos = DB::select('
+        $despachos = DB::select("
             SELECT 
                 codigoDespacho, 
                 nombreDespacho, 
@@ -26,9 +26,9 @@ class DespachoExport implements FromCollection, WithHeadings, ShouldAutoSize, Wi
                 districto AS distrito,
                 circuito
             FROM despachos 
-            WHERE estado IS NULL
-            ORDER BY nombreDespacho ASC
-        ');
+            WHERE estado IS NULL OR LOWER(TRIM(estado)) != 'Inactivo'
+            ORDER BY codigoDespacho ASC
+        ");
 
         return collect($despachos)->map(function ($item) {
             return [

@@ -434,6 +434,15 @@
         0 0 0 rgba(0,63,117,.5);
     }
 }
+
+@media (min-width: 992px) and (max-width: 1350px) {
+    .nav-text {
+        display: none !important;
+    }
+    .wave-btn {
+        padding: 12px 14px; /* Reduce padding slightly for icons only */
+    }
+}
   </style>
 </head>
 
@@ -464,26 +473,26 @@
       <!-- Links de navegación -->
       <nav id="navLinks" class="nav-links text-sm font-medium" aria-label="Menú principal">
 
-    <a href="{!! url('/') !!}" class="brand-link wave-btn">
+    <a href="{!! url('/') !!}" class="brand-link wave-btn" title="Inicio">
         <i class="bi bi-house-door"></i>
     </a>
 
-    <a href="{!! url('/directorio') !!}" class="brand-link wave-btn">
-        <i class="bi bi-telephone"></i> Directorio
+    <a href="{!! url('/directorio') !!}" class="brand-link wave-btn" title="Directorio">
+        <i class="bi bi-telephone"></i> <span class="nav-text">Directorio</span>
     </a>
 
-    <a href="{!! url('/comite_genero') !!}" class="brand-link wave-btn">
-        <i class="bi bi-people"></i> Comité de Género
+    <a href="{!! url('/comite_genero') !!}" class="brand-link wave-btn" title="Comité de Género">
+        <i class="bi bi-people"></i> <span class="nav-text">Comité de Género</span>
     </a>
 
-    <a href="{!! url('/seguridad_y_salud_en_el_trabajo') !!}" class="brand-link wave-btn">
-        <i class="bi bi-shield-check"></i> Seguridad y Salud
+    <a href="{!! url('/seguridad_y_salud_en_el_trabajo') !!}" class="brand-link wave-btn" title="Seguridad y Salud">
+        <i class="bi bi-shield-check"></i> <span class="nav-text">Seguridad y Salud</span>
     </a>
 
     <!-- MENÚ SERVICIOS (CSS Dropdown puro para que no falle con JS) -->
     <div class="relative group">
-        <button class="brand-link wave-btn flex items-center gap-1 cursor-pointer w-full text-left">
-            <i class="bi bi-grid-fill"></i> Servicios <i class="bi bi-chevron-down text-[10px] transition-transform group-hover:rotate-180"></i>
+        <button class="brand-link wave-btn flex items-center gap-1 cursor-pointer w-full text-left" title="Servicios">
+            <i class="bi bi-grid-fill"></i> <span class="nav-text">Servicios</span> <i class="bi bi-chevron-down text-[10px] transition-transform group-hover:rotate-180"></i>
         </button>
         <!-- Menú Desplegable -->
         <div class="absolute left-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-slate-100 overflow-hidden lg:left-1/2 lg:-translate-x-1/2">
@@ -511,8 +520,8 @@
     @if(isset($ip))
         @php $ipPrefix = implode('.', array_slice(explode('.', $ip), 0, 3)); @endphp
         @if($ipPrefix == "190.217.19" || $ipPrefix == "190.217.24")
-            <a href="{!! url('/clasificados') !!}" class="brand-link wave-btn">
-                <i class="bi bi-shop"></i> Clasificados
+            <a href="{!! url('/clasificados') !!}" class="brand-link wave-btn" title="Clasificados">
+                <i class="bi bi-shop"></i> <span class="nav-text">Clasificados</span>
             </a>
         @endif
     @endif
@@ -549,9 +558,12 @@
   @endunless
 
   <!-- ===== CONTENIDO PRINCIPAL ===== -->
-  <main class="flex-grow pb-28">
-    @include('alerts.flash-message')
-    @yield('content')
+  <main class="flex-grow pb-10 pt-[150px] md:pt-[170px] px-3 md:px-0">
+    <div class="container mx-auto">
+      @include('alerts.flash-message')
+      @yield('content')
+      <br>
+    </div>
   </main>
 
   <!-- ===== FOOTER ===== -->

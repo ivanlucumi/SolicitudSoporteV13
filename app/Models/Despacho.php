@@ -14,13 +14,14 @@ class Despacho extends Model
     protected $table = "despachos";
     protected $primaryKey = 'codigoDespacho';
     protected $fillable = [
-	    'codigoDespacho',
+    	'codigoDespacho',
     	'nombreDespacho',
     	'sede',
     	'codCiudad',
     	'direccion',
     	'telefono',
     	'correoD',
+    	'atencion_virtual',
     	'correo_demanda',
     	'correo_memoriales',
         'extension',
@@ -52,7 +53,7 @@ class Despacho extends Model
         $desp = DB::table('despachos')
             ->join('ciudades', 'despachos.codCiudad', '=', 'ciudades.codigoCiudad')
             ->select('despachos.*', 'ciudades.nombreCiudad as ciudad')
-            ->whereNull('estado')
+            ->whereRaw("(estado IS NULL OR LOWER(TRIM(estado)) != 'Inactivo')")
             ->orderBy('nombreDespacho', 'asc')
             ->orderBy('ciudad', 'asc')
             ->get();

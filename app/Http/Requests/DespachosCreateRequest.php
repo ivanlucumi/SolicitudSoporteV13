@@ -31,6 +31,7 @@ class DespachosCreateRequest extends FormRequest
             'direccion'         => 'required|string|max:50',
             'telefono'          => 'required|numeric|digits_between:7,12',
             'correoD'           => 'required|email|max:70',
+            'atencion_virtual'  => 'nullable|string|max:255',
             'correo_demanda'    => 'nullable|email|max:70',
             'correo_memoriales' => 'nullable|email|max:70',
             'extension'         => 'nullable|string|max:20',

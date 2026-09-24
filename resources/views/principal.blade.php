@@ -54,7 +54,7 @@
   .slide-media-wrapper video {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
   }
 
@@ -338,14 +338,14 @@
   .slide-media-wrapper img {
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
     display: block !important;
   }
 
   .slide-media-wrapper video {
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
     display: block !important;
   }
 
@@ -466,7 +466,7 @@
                        alt="{{ $title }}"
                        class="slide-media"
                        loading="lazy"
-                       style="width:100%;height:100%;object-fit:cover;">
+                       style="width:100%;height:100%;object-fit:contain;">
                   
                   <!-- Botón de redirección si tiene enlace -->
                   @if($hasLink)
@@ -521,7 +521,7 @@
                          alt="{{ $title }}"
                          class="slide-media"
                          loading="lazy"
-                         style="width:100%;height:100%;object-fit:cover;">
+                         style="width:100%;height:100%;object-fit:contain;">
                   @else
                     <div class="w-full h-full bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
                       <div class="text-center text-white p-8">

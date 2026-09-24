@@ -23,6 +23,7 @@ class SolicitudPrestamoEquipo extends Model
         'codigo_despacho',
         'despacho',
         'circuito',
+        'creado_por',
         'equipos',
         'archivo_pdf',
         'estado',
@@ -34,4 +35,9 @@ class SolicitudPrestamoEquipo extends Model
         'equipos'    => 'array',
         'fecha_acta' => 'date',
     ];
+
+    public function creador()
+    {
+        return $this->belongsTo(User::class, 'creado_por', 'id');
+    }
 }

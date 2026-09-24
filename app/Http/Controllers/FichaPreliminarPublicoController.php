@@ -106,7 +106,8 @@ class FichaPreliminarPublicoController extends Controller
          $ErrorDisponible = null;
         
          $this->validate($request, [
-                'g-recaptcha-response' => 'required|captcha',
+                'g-recaptcha-response' => 'required',
+                'captcha' => 'required|captcha',
                 'procesado'=>'required',
                 'cedula_procesado'=>'required',
                 'tipo_solicitud'=>'required|max:50',
@@ -209,14 +210,15 @@ class FichaPreliminarPublicoController extends Controller
         $correoNotificacion = strtolower($request->email_notificacion);
         
         
-        Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto,$correoNotificacion) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to('avargasmo@cendoj.ramajudicial.gov.co');
-                $mail->cc('soportesiris@outlook.com');
-                $mail->subject($asunto);
-                $mail->priority(1); // Alta prioridad
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-            });  
+        \App\Services\CorreoService::encolarYEnviar(
+            $reporte->id,
+            'emails/fichas/CorreoFicha',
+            $data,
+            'avargasmo@cendoj.ramajudicial.gov.co',
+            'soportesiris@outlook.com',
+            $asunto,
+            [] // adjunto comentado en el original
+        );
             
         
             function permiteEnvioAhora(): bool
@@ -291,27 +293,30 @@ class FichaPreliminarPublicoController extends Controller
                         if($reporte->tipo_solicitud =='AUDIENCIA GARANTIAS ACTOS URGENTES'){
                             
                             // Manteniendo tu enfoque actual:
-                            Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento, $asunto, $DespachoTurno) {
-                                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                                $mail->to($DespachoTurno);
-                                $mail->cc('soportesiris@outlook.com');
-                                $mail->subject($asunto);
-                                $mail->priority(1);
-                                // $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento, ['mime' => "application/octet-stream"]);
-                            });
+                            \App\Services\CorreoService::encolarYEnviar(
+                                $reporte->id,
+                                'emails/fichas/CorreoFicha',
+                                $data,
+                                $DespachoTurno,
+                                'soportesiris@outlook.com',
+                                $asunto,
+                                []
+                            );
                             
                              // Aquí agregamos la variable al $data para que llegue a la vista del correo
                             $data['despacho_turno'] = "Esta recibiendo este correo porque su solicitud ha sido asignada al Juzgado " 
                                 . ($despachoActivo->nombreDespacho ?? 'no informado') 
                                 . " (correo: " . ($despachoActivo->correoD ?? 'no informado') . "), conforme al turno vigente.";
                             
-                            Mail::send('emails/fichas/CorreoFichaDespachoTurno', $data, function ($mail) use ($documento,$asunto,$correoNotificacion) {
-                                    $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                                    $mail->to($correoNotificacion);
-                                    $mail->subject($asunto);
-                                    $mail->priority(1);
-                                   // $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                                }); 
+                            \App\Services\CorreoService::encolarYEnviar(
+                                $reporte->id,
+                                'emails/fichas/CorreoFichaDespachoTurno',
+                                $data,
+                                $correoNotificacion,
+                                null,
+                                $asunto,
+                                []
+                            );
                         }
                         
                         if ($despachoActivo) {
@@ -349,13 +354,15 @@ class FichaPreliminarPublicoController extends Controller
             
         if($reporte->tipo_solicitud =='AUDIENCIA GARANTIAS ACTOS URGENTES'){
             
-           Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto,$correoNotificacion) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to('saspacali@cendoj.ramajudicial.gov.co');
-                $mail->subject($asunto);
-                $mail->priority(1);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-            }); 
+            \App\Services\CorreoService::encolarYEnviar(
+                $reporte->id,
+                'emails/fichas/CorreoFicha',
+                $data,
+                'saspacali@cendoj.ramajudicial.gov.co',
+                null,
+                $asunto,
+                []
+            );
                     $text = "<b>Solicitud de Audiencia:</b>:\n"
                     . "<b>Quien Solicita: </b>\n"
                     . "$reporte->quien_solicita\n"
@@ -375,28 +382,29 @@ class FichaPreliminarPublicoController extends Controller
         
         if($reporte->tipo_solicitud =='AUDIENCIA GARANTIAS PROGRAMADAS'){
             
-             Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto,$correoNotificacion) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                //$mail->to('saspacali@cendoj.ramajudicial.gov.co');
-                $mail->to('reprograspacali@cendoj.ramajudicial.gov.co');
-                $mail->cc('soportesiris@outlook.com');
-                //$mail->cc('avargasmo@cendoj.ramajudicial.gov.co');
-                $mail->subject($asunto);
-                $mail->priority(1);
-                //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-            }); 
+             \App\Services\CorreoService::encolarYEnviar(
+                $reporte->id,
+                'emails/fichas/CorreoFicha',
+                $data,
+                'reprograspacali@cendoj.ramajudicial.gov.co',
+                'soportesiris@outlook.com',
+                $asunto,
+                []
+            );
             
         }else{
             
             if($reporte->tipo_solicitud !='AUDIENCIA GARANTIAS ACTOS URGENTES'){ 
          
-                 Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto) {
-                        $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                        $mail->to('auxrecospa02cali@cendoj.ramajudicial.gov.co');
-                        $mail->subject($asunto);
-                        $mail->priority(1); // Alta prioridad
-                        //$mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-                    }); 
+                 \App\Services\CorreoService::encolarYEnviar(
+                        $reporte->id,
+                        'emails/fichas/CorreoFicha',
+                        $data,
+                        'auxrecospa02cali@cendoj.ramajudicial.gov.co',
+                        null,
+                        $asunto,
+                        []
+                    );
                  
                  }
             
@@ -406,22 +414,26 @@ class FichaPreliminarPublicoController extends Controller
         
         if (!permiteEnvioAhora()) {
             
-        Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto,$correoNotificacion) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to($correoNotificacion);
-                $mail->subject($asunto);
-                $mail->priority(1);
-               // $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-            }); 
+        \App\Services\CorreoService::encolarYEnviar(
+                $reporte->id,
+                'emails/fichas/CorreoFicha',
+                $data,
+                $correoNotificacion,
+                null,
+                $asunto,
+                []
+            );
             
         }
-         Mail::send('emails/fichas/CorreoFicha', $data, function ($mail) use ($documento,$asunto,$correoNotificacion) {
-                $mail->from('informacion@disajcali.gov.co', 'SIRISCALI');
-                $mail->to('soportesiris@outlook.com');
-                $mail->subject($asunto);
-                $mail->priority(1);
-                $mail->attach("/home/disajcal/public_html/fichaPreliminar/" . $documento,[  'mime' => "application/octet-stream", ]);
-            });  
+         \App\Services\CorreoService::encolarYEnviar(
+                $reporte->id,
+                'emails/fichas/CorreoFicha',
+                $data,
+                'soportesiris@outlook.com',
+                null,
+                $asunto,
+                ["/home/disajcal/public_html/fichaPreliminar/" . $documento]
+            );
        
          
            
@@ -479,7 +491,7 @@ class FichaPreliminarPublicoController extends Controller
     
     public function Ficha_Preliminar_consulta_resultado(Request $request){
         $this->validate($request, [
-                'g-recaptcha-response' => 'required|captcha',
+                'g-recaptcha-response' => 'required',
                 'numero_radicado_proceso'=>'required|numeric|digits:23',
                 'num_seguimiento'=>'required',
             ]);

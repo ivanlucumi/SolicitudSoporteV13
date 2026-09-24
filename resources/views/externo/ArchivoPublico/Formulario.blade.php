@@ -355,6 +355,20 @@ ul li:hover {background: #ffffff52;}
                         <div align="center" class="col-xs-12">
                             <div  class="g-recaptcha" data-sitekey="6LcOzHoeAAAAAJIayuDbVH0y1w_-qGb_OiR1om1U"></div>
                             <br>
+                            <!-- MEWS CAPTCHA -->
+                            <div class="captcha" style="margin-bottom: 15px;">
+                                <span>{!! captcha_img() !!}</span>
+                                <button type="button" class="btn btn-danger" id="reloadCaptcha" style="padding: 6px 12px; margin-left: 5px;" title="Cambiar Captcha">
+                                    &#x21bb;
+                                </button>
+                            </div>
+                            <input id="captcha" type="text" class="form-control @error('captcha') is-invalid @enderror" placeholder="Ingrese el texto de la imagen" name="captcha" style="max-width: 300px; margin: 0 auto;" required autocomplete="off">
+                            
+                            @error('captcha')
+                                <span class="help-block text-danger" role="alert">
+                                    <strong style="color:red">{{ $message }}</strong>
+                                </span>
+                            @enderror
                         </div>
                         <div align="center" class="col-xs-12">
                             @if ($errors->has('g-recaptcha-response'))
@@ -643,6 +657,18 @@ document.getElementById('file_anexo').onchange = function() {
             return false;
         }
 
+        // Validar el Captcha de la Imagen
+        var captchaImgVal = document.getElementById('captcha').value;
+        if (captchaImgVal.trim() === '') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Validación requerida',
+                text: 'Por favor ingrese el texto de la imagen (Captcha)',
+                confirmButtonColor: '#004182'
+            });
+            return false;
+        }
+
         // Validar archivo PDF
         var archivoInput = document.getElementById('file_anexo');
         if (archivoInput.files.length === 0) {
@@ -668,6 +694,22 @@ document.getElementById('file_anexo').onchange = function() {
 
         return true;
     }
+</script>
+
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        var reloadBtn = document.getElementById('reloadCaptcha');
+        if (reloadBtn) {
+            reloadBtn.addEventListener('click', function(e) {
+                e.preventDefault(); // Evitar cualquier comportamiento por defecto (ej. submit de formulario)
+                var img = document.querySelector('.captcha img');
+                if (img) {
+                    var baseUrl = img.src.split('?')[0];
+                    img.src = baseUrl + '?' + Math.random();
+                }
+            });
+        }
+    });
 </script>
 
 @stack('scripts')
